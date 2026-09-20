@@ -57,3 +57,11 @@
 ## خامات واقعية بالذكاء الاصطناعي (GPU مجاني)
 - `gpu/textures.py` بيتشغّل على GPU مجاني في Kaggle (عن طريق `.github/workflows/gpu_textures.yml`) ويولّد صور واجهات عمارات مصرية (إمبابة، وسط البلد، الهرم) بنموذج Stable Diffusion XL.
 - الناتج في `assets/textures/` وبيتدمج في اللعبة بـ `python tools/build_tex.py`.
+
+## النسخة الواقعية: القاهرة الحقيقية (`cairo.html`)
+- بتستخدم صور Google Photorealistic 3D Tiles (عن طريق Cesium ion) لشوارع إمبابة ووسط البلد والهرم الحقيقية، والسواقة فوقها.
+- محتاجة حساب Cesium ion مجاني و token بصلاحية `assets:read`، وإضافة Google Photorealistic 3D Tiles لأصولك من Asset Depot.
+- التصادم بيتحسب من ارتفاع السطح الحقيقي (أي حاجة أعلى من الطريق بحوالي متر = حيطة).
+- الشوارع والمهام من بيانات OpenStreetMap (© مساهمي OpenStreetMap، ODbL) عن طريق `tools/build_districts.py`، والمركبات من `tools/make_glb.py`.
+- بيانات المصدر (Google وCesium) بتظهر أعلى الشاشة، ولازم تفضل ظاهرة.
+- تقيلة على الموبايل وممكن يسخن (مضبوطة على 30 إطار في الثانية ودقة 75%).
