@@ -1,0 +1,48 @@
+name: GPU textures (free Kaggle GPU)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  gpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install kaggle
+      - name: Prepare the kernel
+        run: |
+          test -n "$KAGGLE_USERNAME" || { echo "Missing KAGGLE_USERNAME secret"; exit 1; }
+          mkdir kernel && cp gpu/textures.py kernel/script.py
+          cat > kernel/kernel-metadata.json <<META
+          {"id": "$KAGGLE_USERNAME/zahma-textures", "title": "zahma-textures", "code_file": "script.py",
+           "language": "python", "kernel_type": "script", "is_private": "true",
+           "enable_gpu": "true", "enable_internet": "true", "dataset_sources": [], "competition_sources": [], "kernel_sources": []}
+          META
+      - name: Push (this starts the GPU run)
+        run: kaggle kernels push -p kernel
+      - name: Wait for the GPU run to finish
+        run: |
+          for i in $(seq 1 120); do
+            S=$(kaggle kernels status "$KAGGLE_USERNAME/zahma-textures" 2>&1 || true)
+            echo "$i: $S"
+            case "$S" in
+              *COMPLETE*) exit 0;;
+              *ERROR*|*CANCEL*) echo "Kernel failed"; kaggle kernels output "$KAGGLE_USERNAME/zahma-textures" -p out || true; exit 1;;
+            esac
+            sleep 60
+          done
+          echo "Timed out"; exit 1
+      - name: Download and commit the textures
+        run: |
+          kaggle kernels output "$KAGGLE_USERNAME/zahma-textures" -p out
+          mkdir -p assets/textures && cp out/*.jpg assets/textures/
+          git config user.name "zahma-bot"; git config user.email "zahma-bot@users.noreply.github.com"
+          git add assets && git commit -m "Add AI-generated photoreal textures" || echo "nothing to commit"
+          git pull --rebase origin main && git push origin HEAD:main
