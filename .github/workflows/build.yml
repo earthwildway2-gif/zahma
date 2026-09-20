@@ -36,16 +36,16 @@ jobs:
           python-version: '3.12'
       - name: Download real street and building data (OpenStreetMap)
         run: |
-          python tools/osm_fetch.py imbaba 30.0705 31.2015 30.0815 31.2125
-          sleep 20
-          python tools/osm_fetch.py downtown 30.0390 31.2300 30.0500 31.2410
-          sleep 20
-          python tools/osm_fetch.py haram 29.9945 31.1630 30.0055 31.1740
+          mkdir -p data
+          for spec in "imbaba 30.0705 31.2015 30.0815 31.2125" "downtown 30.0390 31.2300 30.0500 31.2410" "haram 29.9945 31.1630 30.0055 31.1740"; do
+            python tools/osm_fetch.py $spec 2>&1 | tee -a data/fetch_log.txt || echo "FAILED: $spec" | tee -a data/fetch_log.txt
+            sleep 15
+          done
       - name: Commit results
         run: |
           git config user.name "zahma-bot"
           git config user.email "zahma-bot@users.noreply.github.com"
           git add -A data
-          git commit -m "Add OpenStreetMap data for the three districts" || echo "nothing to commit"
+          git commit -m "OpenStreetMap data (and fetch log)" || echo "nothing to commit"
           git pull --rebase origin main
           git push origin HEAD:main
