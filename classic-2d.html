@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#14110f">
+<title>زحمة — توصيلة الفجر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&display=swap">
+<style>
+:root{
+  --bg:#14110f; --panel:rgba(24,19,16,.94); --line:#4a3d31;
+  --fg:#f6ecd9; --dim:#b9ab93; --accent:#e8a838; --danger:#e2553f; --ok:#5fbf7a;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--bg);color:var(--fg);overflow:hidden}
+body{height:100%;position:relative;font-family:Cairo,"Segoe UI",Tahoma,Arial,sans-serif;
+  -webkit-user-select:none;user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+canvas#game{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+
+/* HUD */
+#hud{position:absolute;top:8px;left:0;right:0;padding:0 12px;pointer-events:none;text-align:center}
+#obj{display:inline-block;max-width:92%;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:6px 14px;font-weight:700;font-size:15px}
+#row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-weight:700;font-size:15px;
+  text-shadow:0 1px 3px #000}
+#row span{background:rgba(20,17,15,.72);border-radius:8px;padding:3px 10px}
+#dist{margin-top:6px;font-size:13px;color:var(--dim);text-shadow:0 1px 3px #000;min-height:18px}
+#dist.bad{color:var(--danger);font-weight:700}
+#mini{position:absolute;left:10px;top:118px;width:104px;height:78px;border:2px solid var(--line);
+  border-radius:8px;opacity:.9;pointer-events:none}
+
+/* Toast */
+#toast{position:absolute;left:50%;top:38%;transform:translateX(-50%);max-width:86%;
+  background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:10px 18px;
+  font-weight:900;font-size:19px;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s}
+#toast.on{opacity:1}
+
+/* Controls (always left/right on screen, whatever the page direction) */
+#ctl{position:absolute;left:0;right:0;bottom:14px;padding:0 14px;display:flex;justify-content:space-between;
+  align-items:flex-end;direction:ltr;pointer-events:none}
+#ctl .grp{display:flex;gap:12px;align-items:flex-end}
+.b{pointer-events:auto;width:76px;height:76px;border-radius:50%;border:2px solid rgba(246,236,217,.35);
+  background:rgba(20,17,15,.55);color:var(--fg);font:900 26px Cairo,Arial,sans-serif;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;touch-action:none;padding:0}
+.b small{font-size:11px;font-weight:700;color:var(--dim);margin-top:-2px}
+.b.big{width:88px;height:88px;background:rgba(232,168,56,.45);border-color:var(--accent)}
+.b.on{background:rgba(232,168,56,.85);color:#1a1207}
+body.dlg #ctl{display:none}
+
+/* Dialogue */
+#dlg{position:absolute;left:10px;right:10px;bottom:12px;background:var(--panel);border:1px solid var(--line);
+  border-top:4px solid var(--accent);border-radius:14px;padding:12px 16px 14px;max-width:640px;margin:0 auto}
+#who{font-weight:900;color:var(--accent);font-size:16px;margin-bottom:4px}
+#txt{font-size:18px;line-height:1.7;font-weight:500}
+#hint{margin-top:8px;font-size:13px;color:var(--dim);text-align:left;direction:ltr}
+#opts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.opt{font:700 16px Cairo,Arial,sans-serif;color:var(--fg);background:#2a221b;border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;text-align:right}
+.opt:active{background:#3b2f24}
+.opt:disabled{opacity:.45}
+
+/* Title / end screens */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:24px;background:
+  linear-gradient(180deg,rgba(20,17,15,.55),rgba(20,17,15,.96) 70%),
+  repeating-linear-gradient(90deg,#1d1814 0 46px,#241d17 46px 92px)}
+.screen h1{font-size:64px;font-weight:900;margin:0;letter-spacing:0;color:var(--accent);line-height:1.1}
+.screen h2{font-size:30px;font-weight:900;margin:0 0 6px}
+.screen p{max-width:420px;line-height:1.8;color:var(--dim);font-size:16px;margin:10px 0}
+.screen .sub{font-size:19px;color:var(--fg);font-weight:700;margin:6px 0 4px}
+.go{margin-top:18px;font:900 22px Cairo,Arial,sans-serif;background:var(--accent);color:#1a1207;border:0;
+  border-radius:14px;padding:13px 40px}
+.go:active{transform:scale(.97)}
+#stats{margin-top:8px;color:var(--fg);font-weight:700;line-height:1.9}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="obj"></div>
+  <div id="row"><span id="timer">03:20</span><span id="zone">إمبابة</span><span id="money">400 ج</span></div>
+  <div id="dist"></div>
+</div>
+<canvas id="mini" width="208" height="156" class="hidden"></canvas>
+<div id="toast"></div>
+
+<div id="ctl" class="hidden">
+  <div class="grp">
+    <button class="b" id="bL" aria-label="يسار">◀</button>
+    <button class="b" id="bR" aria-label="يمين">▶</button>
+  </div>
+  <div class="grp">
+    <button class="b" id="bB" aria-label="فرامل">■<small>فرامل</small></button>
+    <button class="b big" id="bG" aria-label="بنزين">▲<small>بنزين</small></button>
+  </div>
+</div>
+
+<div id="dlg" class="hidden">
+  <div id="who"></div>
+  <div id="txt"></div>
+  <div id="opts"></div>
+  <div id="hint">اضغط للمتابعة</div>
+</div>
+
+<div id="title" class="screen">
+  <h1>زحمة</h1>
+  <div class="sub">الفصل الأول: توصيلة الفجر</div>
+  <p>إنت سيد، سواق توكتوك من إمبابة، وعليك دين 20 ألف للمعلم حمودة. الليلة دي في توصيلة واحدة ممكن تمسح الدين... أو تخلّيه أكبر.</p>
+  <p>بنزين وفرامل وتحكم يمين ويمين شمال. على الكيبورد: الأسهم أو WASD.</p>
+  <button class="go" id="start">ابدأ</button>
+</div>
+
+<div id="end" class="screen hidden">
+  <h2 id="endT"></h2>
+  <p id="endP"></p>
+  <div id="stats"></div>
+  <button class="go" id="again">العب تاني</button>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const canvas = $('#game'), ctx = canvas.getContext('2d');
+const mini = $('#mini'), mctx = mini.getContext('2d');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const TAU = Math.PI * 2;
+const angDiff = (a, b) => { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
+const FONT = 'Cairo,Tahoma,"Segoe UI",Arial,sans-serif';
+
+/* ---------- World ---------- */
+const CELL = 520, ROAD = 150, COLS = 12, ROWS = 9, W = COLS * CELL, H = ROWS * CELL;
+const TOTAL_TIME = 200;
+let seed = 20260919;
+const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+const pick = a => a[Math.floor(rnd() * a.length)];
+
+const ZONES = [
+  { name: 'إمبابة', tints: ['#8f5b42', '#a4664a', '#7d5340', '#b07a52'], plaza: '#3f5a3a', mini: '#8f5b42',
+    signs: ['كشري الحاج علي', 'صيدلية الشفاء', 'سوبر ماركت السلام', 'مكوجي', 'عصير قصب', 'فول وطعمية', 'كوافير حريمي', 'محل موبايلات'],
+    signCols: ['#1f6f5c', '#a63a2f', '#2f5d9e', '#7a4b8f'] },
+  { name: 'وسط البلد', tints: ['#b9a88c', '#c7b699', '#a99a82', '#cbb48a'], plaza: '#4a6146', mini: '#b9a88c',
+    signs: ['كافيه النيل', 'مكتبة وسط البلد', 'مطعم الجمهورية', 'محل أحذية', 'فندق النخيل', 'حلواني الأمير', 'بازار التحرير'],
+    signCols: ['#2b4a3e', '#6b2d2d', '#243f66', '#5a4a1f'] },
+  { name: 'الهرم', tints: ['#c9ab72', '#d8bd85', '#b99a5f', '#a98a52'], plaza: '#8a7a52', mini: '#c9ab72',
+    signs: ['كباريه القمر', 'مشويات الهرم', 'صالة ألعاب', 'كازينو النيل', 'مول الهرم', 'كافيه الصحرا'],
+    signCols: ['#b02a6b', '#1a7f8f', '#8a2be2', '#c8541b'] }
+];
+const zoneOfBlock = i => i < 5 ? 0 : (i < 9 ? 1 : 2);
+const zoneOfX = x => x < 5 * CELL ? 0 : (x < 9 * CELL ? 1 : 2);
+
+const blocks = [], grid = [];
+for (let i = 0; i < COLS; i++) {
+  grid[i] = [];
+  for (let j = 0; j < ROWS; j++) {
+    const z = zoneOfBlock(i), Z = ZONES[z];
+    const x = i * CELL + ROAD / 2, y = j * CELL + ROAD / 2, w = CELL - ROAD, h = CELL - ROAD;
+    const plaza = rnd() < 0.12;
+    const b = { i, j, x, y, w, h, z, plaza, tint: pick(Z.tints), sign: null, trees: [],
+                solid: { x: x + 10, y: y + 10, w: w - 20, h: h - 20 } };
+    if (plaza) { for (let k = 0; k < 7; k++) b.trees.push({ x: x + 40 + rnd() * (w - 80), y: y + 40 + rnd() * (h - 80), r: 14 + rnd() * 12 }); }
+    else if (rnd() < 0.55) b.sign = { t: pick(Z.signs), c: pick(Z.signCols) };
+    grid[i][j] = b; blocks.push(b);
+  }
+}
+
+const winPat = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 28;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,226,150,.5)'; g.fillRect(8, 7, 9, 12);
+  g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, 26, 28, 2);
+  return ctx.createPattern(c, 'repeat');
+})();
+
+/* ---------- Mission targets ---------- */
+const TARGETS = [
+  { x: 4 * CELL, y: 1 * CELL, label: 'ورشة الأسطى فتحي' },
+  { x: 6 * CELL, y: 5 * CELL, label: 'كافيه رمسيس' },
+  { x: 11 * CELL, y: 8 * CELL, label: 'الهرم — التسليم' }
+];
+const START = { x: 1 * CELL, y: 1 * CELL };
+const CHECKPOINT_X = 9 * CELL + 20;
+
+/* ---------- State ---------- */
+const P = { x: 0, y: 0, a: 0, v: 0, rad: 16, maxV: 130, level: 0 };
+const G = { state: 'title', t: TOTAL_TIME, money: 400, stage: 0, hasBag: false, checkpointDone: false,
+            heat: false, cop: null, barrier: null, trail: [], choice: 'عدّيت من غير مشاكل', shake: 0, zone: -1 };
+const cam = { x: 0, y: 0, init: false };
+const keys = { up: false, down: false, left: false, right: false };
+const touch = { up: false, down: false, left: false, right: false };
+const npcs = [], smoke = [];
+let now = 0, S = 1, hudT = 0, miniT = 0, smokeT = 0, trailLast = { x: 0, y: 0 };
+
+const NPC_TYPES = [
+  { len: 54, wid: 28, body: '#1b1b1b', roof: '#f4f4f4' },
+  { len: 70, wid: 32, body: '#e9edf0', roof: '#3d6fb5' },
+  { len: 52, wid: 28, body: '#b23a3a', roof: '#2a2a2a' },
+  { len: 52, wid: 28, body: '#3a6db2', roof: '#2a2a2a' },
+  { len: 52, wid: 28, body: '#8a8f94', roof: '#2a2a2a' }
+];
+function syncNpc(n) {
+  if (n.horiz) { n.x = n.pos; n.y = n.line + n.off; n.a = n.dir === 1 ? 0 : Math.PI; }
+  else { n.x = n.line + n.off; n.y = n.pos; n.a = n.dir === 1 ? Math.PI / 2 : -Math.PI / 2; }
+}
+function spawnNpcs() {
+  npcs.length = 0;
+  for (let k = 0; k < 34; k++) {
+    const horiz = rnd() < .5, dir = rnd() < .5 ? 1 : -1, t = pick(NPC_TYPES);
+    const line = Math.floor(rnd() * ((horiz ? ROWS : COLS) + 1)) * CELL;
+    const pos = rnd() * (horiz ? W : H);
+    const off = (horiz ? (dir === 1 ? 1 : -1) : (dir === 1 ? -1 : 1)) * ROAD / 4;
+    const n = { horiz, dir, t, line, off, pos, sp: 80 + rnd() * 70, stop: 0, x: 0, y: 0, a: 0 };
+    syncNpc(n);
+    if (Math.hypot(n.x - START.x, n.y - START.y) < 340) { n.pos += 900; syncNpc(n); }
+    npcs.push(n);
+  }
+}
+
+/* ---------- Audio (tiny horn) ---------- */
+let ac = null, lastHonk = -9999;
+function initAudio() { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
+function honk() {
+  if (!ac || now - lastHonk < 1200) return; lastHonk = now;
+  try {
+    const o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();
+    o.type = o2.type = 'square'; o.frequency.value = 420; o2.frequency.value = 500; g.gain.value = 0.03;
+    o.connect(g); o2.connect(g); g.connect(ac.destination);
+    o.start(); o2.start(); o.stop(ac.currentTime + .22); o2.stop(ac.currentTime + .22);
+  } catch (e) { /* audio is optional */ }
+}
+
+/* ---------- Dialogue system ---------- */
+const dlg = $('#dlg'), dlgWho = $('#who'), dlgTxt = $('#txt'), dlgOpts = $('#opts'), dlgHint = $('#hint');
+let advance = null;
+function showDlg(on) { dlg.classList.toggle('hidden', !on); document.body.classList.toggle('dlg', on); }
+function closeDlg() { showDlg(false); advance = null; if (G.state === 'dialog') G.state = 'play'; }
+function say(step, next) {
+  G.state = 'dialog';
+  dlgWho.textContent = step.who || ''; dlgTxt.textContent = step.text || '';
+  dlgOpts.innerHTML = ''; dlgHint.style.display = 'block'; advance = next; showDlg(true);
+}
+function ask(step, next) {
+  G.state = 'dialog';
+  dlgWho.textContent = step.who || ''; dlgTxt.textContent = step.text || '';
+  dlgOpts.innerHTML = ''; dlgHint.style.display = 'none'; advance = null; showDlg(true);
+  for (const o of step.choice) {
+    const b = document.createElement('button'); b.className = 'opt'; b.textContent = o.label;
+    if (o.cost && G.money < o.cost) { b.disabled = true; b.textContent += ' (معاك فلوس مش كفاية)'; }
+    b.onclick = e => { if (e) e.stopPropagation(); dlgOpts.innerHTML = ''; o.run(next); };
+    dlgOpts.appendChild(b);
+  }
+}
+function runScript(steps, done) {
+  G.state = 'dialog'; let i = 0;
+  const next = () => {
+    if (i >= steps.length) { closeDlg(); if (done) done(); return; }
+    const s = steps[i++];
+    if (s.choice) ask(s, next); else say(s, next);
+  };
+  next();
+}
+dlg.addEventListener('click', () => { if (advance) { const f = advance; advance = null; f(); } });
+
+/* ---------- Toast & HUD ---------- */
+let toastTimer = 0;
+function toast(msg, ms = 2600) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms);
+}
+const fmt = s => { s = Math.max(0, Math.ceil(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+function currentTarget() {
+  if (G.stage < 2) return TARGETS[G.stage];
+  return (G.checkpointDone && !G.heat) ? TARGETS[2] : null;
+}
+function updateHud() {
+  let obj = '';
+  if (G.stage === 0) obj = 'روح ورشة الأسطى فتحي';
+  else if (G.stage === 1) obj = 'استلم الشنطة من كافيه رمسيس';
+  else if (!G.checkpointDone) obj = 'وصّل الشنطة للهرم قبل الفجر';
+  else if (G.heat) obj = 'فلّت من البوليس الأول!';
+  else obj = 'كمّل على الهرم وسلّم الشنطة';
+  $('#obj').textContent = obj;
+  $('#timer').textContent = '⏱ ' + fmt(G.t);
+  $('#money').textContent = G.money + ' ج';
+  $('#zone').textContent = ZONES[zoneOfX(P.x)].name;
+  const d = $('#dist'), tg = currentTarget();
+  if (G.heat) { d.textContent = 'البوليس وراك!'; d.className = 'bad'; }
+  else if (tg) { d.textContent = 'المسافة: ' + Math.round(Math.hypot(tg.x - P.x, tg.y - P.y) / 8) + ' م'; d.className = ''; }
+  else { d.textContent = ''; d.className = ''; }
+}
+
+/* ---------- Scenes ---------- */
+function introScene() {
+  runScript([
+    { who: 'المعلم حمودة (تليفون)', text: 'إنت فين يا سيد؟ الفلوس مش هتيجي لوحدها يا ابني.' },
+    { who: 'سيد', text: 'جاي يا معلم جاي، التوكتوك بايظ من إمبارح.' },
+    { who: 'المعلم حمودة', text: 'مش عايز حجج. في شنطة مستنياك عند كافيه في رمسيس. توصّلها الهرم قبل الفجر، والعشرين ألف بتوع الشهر بيتمسحوا.' },
+    { who: 'سيد', text: 'شنطة إيه دي؟' },
+    { who: 'المعلم حمودة', text: 'شنطة وخلاص. متسألش، وماتفتحهاش.' },
+    { who: 'سيد', text: 'يعني لازم أعدّي على الأسطى فتحي الأول... التوكتوك ده مش هيوصّل الهرم كده.' }
+  ], () => toast('اتحرك ناحية الورشة (السهم الأصفر بيدلّك)', 3200));
+}
+function repair(level, cost, line) {
+  return next => {
+    G.money -= cost; P.level = level; P.maxV = level === 2 ? 250 : 190;
+    runScript([{ who: 'الأسطى فتحي', text: line }], next);
+  };
+}
+function workshopScene() {
+  runScript([
+    { who: 'الأسطى فتحي', text: 'التوكتوك ده عايز معجزة يا سيد! البوجيهات ميتة والدبرياج بيصرخ.' },
+    { who: 'سيد', text: 'اظبطهولي بأي شكل يا أسطى، ورايا مشوار ضروري.' },
+    { who: 'الأسطى فتحي', text: 'تصليح كامل بـ 150 جنيه، أو حاجة بسيطة تمشّيك بـ 50. اختار، والفلوس اللي هتوفّرها ممكن تنفعك في الطريق.',
+      choice: [
+        { label: 'صلّحها كلها — 150 جنيه', cost: 150, run: repair(2, 150, 'بقت زي الفل. سلّم على المعلم حمودة.') },
+        { label: 'حاجة بسيطة — 50 جنيه', cost: 50, run: repair(1, 50, 'أهو بيمشي... بس متزوّدش عليه.') }
+      ] }
+  ], () => { G.stage = 1; toast('دلوقتي على كافيه رمسيس'); });
+}
+function cafeScene() {
+  runScript([
+    { who: 'شحتة', text: 'إنت سيد بتاع المعلم حمودة؟ خد الشنطة ومتقعدش كتير.' },
+    { who: 'سيد', text: 'تقيلة أوي... فيها إيه؟' },
+    { who: 'شحتة', text: 'قلنا مفيش أسئلة يا معلم. الهرم، شارع الملك فيصل. هتلاقي واحد اسمه الحاج صلاح مستنيك.' },
+    { who: 'سيد', text: 'ماشي. قبل الفجر.' },
+    { who: 'شحتة', text: 'وخد بالك من الكمائن... الليلة دي الدنيا مقلوبة.' }
+  ], () => { G.stage = 2; G.hasBag = true; toast('معاك الشنطة. اتجه للهرم'); });
+}
+function passCheckpoint() { G.barrier = null; G.checkpointDone = true; toast('عدّيت. كمّل على الهرم'); }
+function payOption(cost, line, choiceText) {
+  return next => {
+    G.money -= cost; G.choice = choiceText;
+    runScript([{ who: 'سيد', text: line }, { who: 'الظابط', text: 'ربنا يسهّل. عدّي بسرعة.' }], () => { passCheckpoint(); next(); });
+  };
+}
+function runOption(next) {
+  G.choice = 'هربت من الكمين';
+  runScript([{ who: 'سيد', text: 'مفيش وقت للكلام ده!' }], () => {
+    const b = G.barrier; G.barrier = null; G.heat = true;
+    G.cop = { x: b.x, y: b.y, a: b.a, i: G.trail.length, delay: 1.6, catchT: 0, lostT: 0 };
+    G.checkpointDone = true; toast('البوليس وراك! فلّت منهم', 3000); next();
+  });
+}
+function checkpointScene() {
+  P.v = 0;
+  const fw = { x: Math.cos(P.a), y: Math.sin(P.a) }, rt = { x: -fw.y, y: fw.x };
+  G.barrier = { x: P.x + fw.x * 90 + rt.x * 62, y: P.y + fw.y * 90 + rt.y * 62, a: P.a + 0.55 };
+  const lie = next => {
+    const ok = rnd() < 0.5;
+    const first = [{ who: 'سيد', text: 'دي هدوم يا باشا، بتاعة العيال.' }];
+    if (ok) {
+      G.choice = 'كدبت وعدّت';
+      runScript(first.concat([{ who: 'الظابط', text: 'ماشي، عدّي. وخد بالك من السواقة.' }]), () => { passCheckpoint(); next(); });
+    } else {
+      runScript(first.concat([
+        { who: 'الظابط', text: 'هدوم؟ وبتوصّل هدوم الفجر؟ افتح الشنطة.',
+          choice: [
+            { label: 'خد 300 يا باشا وسيبني', cost: 300, run: payOption(300, 'خد يا باشا واعتبرها ما حصلتش.', 'كدبت... واتفضحت ودفعت') },
+            { label: 'اهرب!', run: runOption }
+          ] }
+      ]), next);
+    }
+  };
+  runScript([
+    { who: 'الظابط', text: 'وقّف على جنب يا كابتن. رخصتك.' },
+    { who: 'سيد', text: 'اتفضل يا باشا.' },
+    { who: 'الظابط', text: 'والشنطة دي فيها إيه؟',
+      choice: [
+        { label: 'دي هدوم يا باشا (كدبة — نص فرصة)', run: lie },
+        { label: 'خدمة يا باشا (200 جنيه)', cost: 200, run: payOption(200, 'شاي للعساكر يا باشا.', 'دفعت رشوة') },
+        { label: 'اهرب!', run: runOption }
+      ] }
+  ]);
+}
+function dropScene() {
+  runScript([
+    { who: 'الحاج صلاح', text: 'اتأخرت... بس عدّت. حمودة قالّي إنك راجل.' },
+    { who: 'سيد', text: 'الشنطة أهي يا حاج. خلّصنا؟' },
+    { who: 'الحاج صلاح', text: 'خلّصنا. بلّغ المعلم إن الحساب اتقفل.' },
+    { who: 'سيد', text: 'وبعدين؟' },
+    { who: 'الحاج صلاح', text: 'وبعدين؟ تعالى بكرة، عندي شغل تاني... الليل لسه طويل.' }
+  ], () => endGame(true, 'الدين اتمسح', 'سلّمت الشنطة قبل الفجر، والمعلم حمودة مسح عليك العشرين ألف. بس الحاج صلاح مش هيسيبك بسهولة... الفصل التاني قريب.'));
+}
+
+/* ---------- Game flow ---------- */
+function endGame(win, title, text) {
+  G.state = 'over'; showDlg(false);
+  $('#endT').textContent = title; $('#endP').textContent = text;
+  $('#endT').style.color = win ? 'var(--ok)' : 'var(--danger)';
+  $('#stats').innerHTML = win
+    ? 'الوقت اللي فضل: ' + fmt(G.t) + '<br>الفلوس معاك: ' + G.money + ' جنيه<br>اللي عملته في الكمين: ' + G.choice
+    : 'الفلوس معاك: ' + G.money + ' جنيه';
+  $('#end').classList.remove('hidden');
+  $('#hud').classList.add('hidden'); $('#ctl').classList.add('hidden'); mini.classList.add('hidden');
+}
+function newGame() {
+  Object.assign(P, { x: START.x, y: START.y, a: 0, v: 0, maxV: 130, level: 0 });
+  Object.assign(G, { state: 'play', t: TOTAL_TIME, money: 400, stage: 0, hasBag: false, checkpointDone: false,
+                     heat: false, cop: null, barrier: null, trail: [], choice: 'عدّيت من غير مشاكل', shake: 0, zone: -1 });
+  trailLast = { x: P.x, y: P.y }; smoke.length = 0; cam.init = false;
+  // fresh traffic each run (the city itself is generated once and never changes)
+  seed = (Date.now() & 0xffffff) + 7; spawnNpcs();
+  $('#title').classList.add('hidden'); $('#end').classList.add('hidden');
+  $('#hud').classList.remove('hidden'); $('#ctl').classList.remove('hidden'); mini.classList.remove('hidden');
+  updateHud(); introScene();
+}
+function fail(title, text) { endGame(false, title, text); }
+
+/* ---------- Physics ---------- */
+function collideRect(e, r) {
+  const cx = clamp(e.x, r.x, r.x + r.w), cy = clamp(e.y, r.y, r.y + r.h);
+  const dx = e.x - cx, dy = e.y - cy, d2 = dx * dx + dy * dy;
+  if (d2 >= e.rad * e.rad) return false;
+  if (d2 === 0) {
+    const l = e.x - r.x, rt = r.x + r.w - e.x, t = e.y - r.y, b = r.y + r.h - e.y, m = Math.min(l, rt, t, b);
+    if (m === l) e.x = r.x - e.rad; else if (m === rt) e.x = r.x + r.w + e.rad; else if (m === t) e.y = r.y - e.rad; else e.y = r.y + r.h + e.rad;
+  } else { const d = Math.sqrt(d2), push = e.rad - d; e.x += dx / d * push; e.y += dy / d * push; }
+  return true;
+}
+
+function update(dt) {
+  if (G.state !== 'play') return;
+  G.t -= dt;
+  if (G.t <= 0) { fail('الفجر طلّع', 'الوقت خلص والشنطة ما وصلتش. المعلم حمودة مش هيسامح.'); return; }
+
+  // input
+  const gas = keys.up || touch.up, brake = keys.down || touch.down;
+  const steer = ((keys.right || touch.right) ? 1 : 0) - ((keys.left || touch.left) ? 1 : 0);
+  if (gas) P.v += 230 * dt;
+  if (brake) P.v -= (P.v > 0 ? 430 : 140) * dt;
+  if (!gas && !brake) { const f = Math.min(Math.abs(P.v), 120 * dt); P.v -= Math.sign(P.v) * f; }
+  P.v = clamp(P.v, -70, P.maxV);
+  const turn = 2.6 * (1 - 0.3 * Math.abs(P.v) / 250) * clamp(P.v / 110, -1, 1);
+  P.a += steer * turn * dt;
+  P.x += Math.cos(P.a) * P.v * dt; P.y += Math.sin(P.a) * P.v * dt;
+
+  // buildings
+  const ci = Math.floor(P.x / CELL), cj = Math.floor(P.y / CELL);
+  let hit = false;
+  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+    if (i < 0 || j < 0 || i >= COLS || j >= ROWS) continue;
+    const b = grid[i][j]; if (b.plaza) continue;
+    if (collideRect(P, b.solid)) hit = true;
+  }
+  P.x = clamp(P.x, 50, W - 50); P.y = clamp(P.y, 50, H - 50);
+  if (hit) { if (Math.abs(P.v) > 60) { G.shake = Math.min(.6, G.shake + .25); } P.v *= 0.72; }
+
+  // traffic
+  for (const n of npcs) {
+    if (n.stop > 0) n.stop -= dt;
+    else {
+      n.pos += n.dir * n.sp * dt; const L = n.horiz ? W : H;
+      if (n.pos > L + 60) n.pos = -60; if (n.pos < -60) n.pos = L + 60;
+      syncNpc(n);
+    }
+    const dx = P.x - n.x, dy = P.y - n.y, min = P.rad + n.t.len * 0.42;
+    if (Math.abs(dx) < min + 10 && Math.abs(dy) < min + 10) {
+      const d = Math.hypot(dx, dy);
+      if (d < min && d > 0) {
+        P.x += dx / d * (min - d); P.y += dy / d * (min - d);
+        if (Math.abs(P.v) > 50) { P.v *= 0.4; G.shake = Math.min(.6, G.shake + .3); }
+        n.stop = 0.8; honk();
+      }
+    }
+  }
+
+  // breadcrumb trail (police follow it)
+  if (Math.hypot(P.x - trailLast.x, P.y - trailLast.y) >= 24) {
+    G.trail.push({ x: P.x, y: P.y }); trailLast = { x: P.x, y: P.y };
+    if (G.trail.length > 700) { G.trail.splice(0, 250); if (G.cop) G.cop.i = Math.max(0, G.cop.i - 250); }
+  }
+
+  // smoke while the tuk-tuk is damaged
+  smokeT -= dt;
+  if (P.level < 2 && smokeT <= 0) { smokeT = P.level === 0 ? .1 : .3; smoke.push({ x: P.x - Math.cos(P.a) * 20, y: P.y - Math.sin(P.a) * 20, life: 1 }); }
+  for (let k = smoke.length - 1; k >= 0; k--) { smoke[k].life -= dt * 1.2; smoke[k].y -= 24 * dt; if (smoke[k].life <= 0) smoke.splice(k, 1); }
+
+  // zones
+  const z = zoneOfX(P.x);
+  if (z !== G.zone) { if (G.zone !== -1) toast('دخلت ' + ZONES[z].name, 1800); G.zone = z; }
+
+  // mission triggers
+  const tg = currentTarget();
+  if (tg && Math.hypot(tg.x - P.x, tg.y - P.y) < 78) {
+    P.v = 0;
+    if (G.stage === 0) workshopScene(); else if (G.stage === 1) cafeScene(); else dropScene();
+    return;
+  }
+  if (G.stage === 2 && !G.checkpointDone && P.x > CHECKPOINT_X) { checkpointScene(); return; }
+
+  // police chase
+  const c = G.cop;
+  if (c) {
+    const d = Math.hypot(P.x - c.x, P.y - c.y);
+    if (c.delay > 0) c.delay -= dt;
+    else {
+      let tx = P.x, ty = P.y;
+      if (c.i < G.trail.length) { tx = G.trail[c.i].x; ty = G.trail[c.i].y; if (Math.hypot(tx - c.x, ty - c.y) < 34) c.i++; }
+      c.a += clamp(angDiff(Math.atan2(ty - c.y, tx - c.x), c.a), -6 * dt, 6 * dt);
+      c.x += Math.cos(c.a) * 205 * dt; c.y += Math.sin(c.a) * 205 * dt;
+      if (d < 56) { c.catchT += dt; if (c.catchT > 1.1) { fail('اتمسكت!', 'البوليس لحقك والشنطة اتصادرت. المعلم حمودة هيعرف.'); return; } }
+      else c.catchT = Math.max(0, c.catchT - dt);
+    }
+    if (d > 700) { c.lostT += dt; if (c.lostT > 2) { G.cop = null; G.heat = false; toast('فلّتّ من البوليس!', 2400); } } else c.lostT = 0;
+  }
+
+  hudT -= dt; if (hudT <= 0) { hudT = 0.2; updateHud(); }
+}
+
+/* ---------- Rendering ---------- */
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+function drawCar(x, y, a, len, wid, body, roof) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-len / 2 + 3, -wid / 2 + 4, len, wid);
+  ctx.fillStyle = body; rr(-len / 2, -wid / 2, len, wid, 6); ctx.fill();
+  ctx.fillStyle = roof; ctx.fillRect(-len * .3, -wid / 2 + 3, len * .34, wid - 6);
+  ctx.fillStyle = 'rgba(170,215,255,.85)'; ctx.fillRect(len * .1, -wid / 2 + 4, len * .14, wid - 8);
+  ctx.fillStyle = '#ffe9a8'; ctx.fillRect(len / 2 - 3, -wid / 2 + 3, 3, 5); ctx.fillRect(len / 2 - 3, wid / 2 - 8, 3, 5);
+  ctx.restore();
+}
+function drawCop(x, y, a) {
+  drawCar(x, y, a, 56, 30, '#f2f2f2', '#2452a8');
+  const f = Math.floor(now / 200) % 2 === 0;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  ctx.fillStyle = f ? '#ff3b30' : '#2d6cff'; ctx.fillRect(-5, -10, 9, 9);
+  ctx.fillStyle = f ? '#2d6cff' : '#ff3b30'; ctx.fillRect(-5, 1, 9, 9);
+  ctx.restore();
+}
+function drawTukTuk() {
+  ctx.save(); ctx.translate(P.x, P.y); ctx.rotate(P.a);
+  ctx.fillStyle = 'rgba(255,240,180,.10)'; ctx.beginPath();
+  ctx.moveTo(20, -8); ctx.lineTo(160, -50); ctx.lineTo(160, 50); ctx.lineTo(20, 8); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-19, -12, 42, 28);
+  ctx.fillStyle = '#1d1d1d'; ctx.fillRect(-20, -17, 13, 5); ctx.fillRect(-20, 12, 13, 5); ctx.fillRect(15, -4, 8, 8);
+  ctx.fillStyle = '#e8a838'; rr(-21, -14, 42, 28, 7); ctx.fill();
+  ctx.fillStyle = '#2b2b2b'; ctx.fillRect(-16, -11, 22, 22);
+  ctx.fillStyle = 'rgba(170,215,255,.85)'; ctx.fillRect(9, -9, 6, 18);
+  ctx.fillStyle = '#ffe9a8'; ctx.fillRect(20, -11, 3, 5); ctx.fillRect(20, 6, 3, 5);
+  if (G.hasBag) { ctx.fillStyle = '#b83a2e'; ctx.fillRect(-13, -6, 10, 12); }
+  ctx.restore();
+}
+function drawBlock(b) {
+  ctx.fillStyle = '#4a4744'; ctx.fillRect(b.x - 9, b.y - 9, b.w + 18, b.h + 18);
+  if (b.plaza) {
+    ctx.fillStyle = ZONES[b.z].plaza; ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = 'rgba(20,50,20,.75)';
+    for (const t of b.trees) { ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, TAU); ctx.fill(); }
+    return;
+  }
+  const s = b.solid;
+  ctx.fillStyle = b.tint; ctx.fillRect(s.x, s.y, s.w, s.h);
+  ctx.fillStyle = winPat; ctx.fillRect(s.x, s.y, s.w, s.h);
+  ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 5; ctx.strokeRect(s.x, s.y, s.w, s.h);
+  if (b.sign) {
+    ctx.font = '700 21px ' + FONT; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sw = Math.min(s.w - 30, ctx.measureText(b.sign.t).width + 26);
+    ctx.fillStyle = b.sign.c; rr(s.x + s.w / 2 - sw / 2, s.y + 14, sw, 32, 6); ctx.fill();
+    ctx.fillStyle = '#fff6e0'; ctx.fillText(b.sign.t, s.x + s.w / 2, s.y + 31, sw - 12);
+  }
+}
+function drawMarker(t) {
+  const p = 1 + 0.12 * Math.sin(now * 0.005);
+  ctx.beginPath(); ctx.arc(t.x, t.y, 58 * p, 0, TAU);
+  ctx.fillStyle = 'rgba(232,168,56,.28)'; ctx.fill();
+  ctx.lineWidth = 4; ctx.strokeStyle = '#e8a838'; ctx.stroke();
+  ctx.font = '900 22px ' + FONT; ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(t.label).width + 24;
+  ctx.fillStyle = 'rgba(20,17,15,.88)'; rr(t.x - w / 2, t.y - 104, w, 34, 8); ctx.fill();
+  ctx.fillStyle = '#e8a838'; ctx.fillText(t.label, t.x, t.y - 87);
+}
+
+function render(dt) {
+  const cw = canvas.width, ch = canvas.height, viewW = cw / S, viewH = ch / S;
+  const lx = P.x + Math.cos(P.a) * P.v * 0.35, ly = P.y + Math.sin(P.a) * P.v * 0.35;
+  const tx = lx - viewW / 2, ty = ly - viewH / 2;
+  if (!cam.init) { cam.x = tx; cam.y = ty; cam.init = true; }
+  cam.x += (tx - cam.x) * Math.min(1, dt * 5); cam.y += (ty - cam.y) * Math.min(1, dt * 5);
+  const sh = G.shake > 0 ? G.shake : 0; G.shake = Math.max(0, G.shake - dt * 1.5);
+  const ox = (Math.random() - .5) * 10 * sh, oy = (Math.random() - .5) * 10 * sh;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#0d0c0b'; ctx.fillRect(0, 0, cw, ch);
+  ctx.setTransform(S, 0, 0, S, (-cam.x + ox) * S, (-cam.y + oy) * S);
+  const vx0 = cam.x - 60, vy0 = cam.y - 60, vx1 = cam.x + viewW + 60, vy1 = cam.y + viewH + 60;
+
+  ctx.fillStyle = '#2e2c2a'; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.strokeStyle = 'rgba(240,220,140,.5)'; ctx.lineWidth = 3; ctx.setLineDash([26, 22]); ctx.beginPath();
+  for (let i = Math.max(0, Math.floor(vx0 / CELL)); i <= Math.min(COLS, Math.ceil(vx1 / CELL)); i++) { ctx.moveTo(i * CELL, Math.max(0, vy0)); ctx.lineTo(i * CELL, Math.min(H, vy1)); }
+  for (let j = Math.max(0, Math.floor(vy0 / CELL)); j <= Math.min(ROWS, Math.ceil(vy1 / CELL)); j++) { ctx.moveTo(Math.max(0, vx0), j * CELL); ctx.lineTo(Math.min(W, vx1), j * CELL); }
+  ctx.stroke(); ctx.restore();
+
+  const i0 = Math.max(0, Math.floor(vx0 / CELL)), i1 = Math.min(COLS - 1, Math.floor(vx1 / CELL));
+  const j0 = Math.max(0, Math.floor(vy0 / CELL)), j1 = Math.min(ROWS - 1, Math.floor(vy1 / CELL));
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) drawBlock(grid[i][j]);
+
+  const tg = G.state === 'title' ? null : currentTarget();
+  if (tg) drawMarker(tg);
+  for (const n of npcs) if (n.x > vx0 && n.x < vx1 && n.y > vy0 && n.y < vy1) drawCar(n.x, n.y, n.a, n.t.len, n.t.wid, n.t.body, n.t.roof);
+  if (G.barrier) {
+    drawCop(G.barrier.x, G.barrier.y, G.barrier.a);
+    ctx.fillStyle = '#ff7a1a';
+    for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.arc(G.barrier.x - Math.sin(G.barrier.a) * k * 30 - 40 * Math.cos(G.barrier.a), G.barrier.y + Math.cos(G.barrier.a) * k * 30 - 40 * Math.sin(G.barrier.a), 6, 0, TAU); ctx.fill(); }
+  }
+  if (G.cop) drawCop(G.cop.x, G.cop.y, G.cop.a);
+  for (const s of smoke) { ctx.fillStyle = 'rgba(200,200,200,' + (s.life * 0.4).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(s.x, s.y, 5 + (1 - s.life) * 9, 0, TAU); ctx.fill(); }
+  drawTukTuk();
+
+  if (tg && G.state === 'play') {
+    const ang = Math.atan2(tg.y - P.y, tg.x - P.x);
+    ctx.save(); ctx.translate(P.x + Math.cos(ang) * 70, P.y + Math.sin(ang) * 70); ctx.rotate(ang);
+    ctx.fillStyle = '#e8a838'; ctx.strokeStyle = '#1a1207'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -12); ctx.lineTo(-4, 0); ctx.lineTo(-10, 12); ctx.closePath(); ctx.stroke(); ctx.fill();
+    ctx.restore();
+  }
+
+  // night fades toward dawn as the timer runs out
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const night = 0.08 + 0.34 * clamp(G.t / TOTAL_TIME, 0, 1);
+  ctx.fillStyle = 'rgba(12,20,58,' + night.toFixed(3) + ')'; ctx.fillRect(0, 0, cw, ch);
+
+  miniT -= dt; if (miniT <= 0) { miniT = 0.12; drawMini(); }
+}
+
+const mBase = document.createElement('canvas'); mBase.width = mini.width; mBase.height = mini.height;
+(() => {
+  const g = mBase.getContext('2d'), sx = mBase.width / W, sy = mBase.height / H;
+  g.fillStyle = '#2a2826'; g.fillRect(0, 0, mBase.width, mBase.height);
+  for (const b of blocks) { g.fillStyle = b.plaza ? ZONES[b.z].plaza : ZONES[b.z].mini; g.fillRect(b.x * sx, b.y * sy, b.w * sx, b.h * sy); }
+})();
+function drawMini() {
+  const sx = mini.width / W, sy = mini.height / H;
+  mctx.drawImage(mBase, 0, 0);
+  const tg = currentTarget();
+  if (tg) { mctx.fillStyle = '#ff5a3c'; mctx.beginPath(); mctx.arc(tg.x * sx, tg.y * sy, 6, 0, TAU); mctx.fill(); }
+  if (G.cop) { mctx.fillStyle = '#2d6cff'; mctx.beginPath(); mctx.arc(G.cop.x * sx, G.cop.y * sy, 5, 0, TAU); mctx.fill(); }
+  mctx.fillStyle = '#ffe14d'; mctx.strokeStyle = '#000'; mctx.lineWidth = 2;
+  mctx.beginPath(); mctx.arc(P.x * sx, P.y * sy, 5, 0, TAU); mctx.fill(); mctx.stroke();
+}
+
+/* ---------- Sizing, input, loop ---------- */
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);   // capped to keep phones cool
+  const cw = canvas.clientWidth || window.innerWidth, ch = canvas.clientHeight || window.innerHeight;
+  canvas.width = Math.floor(cw * dpr); canvas.height = Math.floor(ch * dpr);
+  S = (Math.min(cw, ch) / 560) * dpr;
+  cam.init = false;
+}
+window.addEventListener('resize', resize); resize();
+
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+window.addEventListener('keydown', e => { const k = KEYMAP[e.code]; if (k) { keys[k] = true; e.preventDefault(); }
+  if ((e.code === 'Space' || e.code === 'Enter') && advance) { const f = advance; advance = null; f(); } });
+window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+function bindBtn(id, k) {
+  const el = $(id);
+  const on = e => { e.preventDefault(); touch[k] = true; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+  const off = e => { e.preventDefault(); touch[k] = false; el.classList.remove('on'); };
+  el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off);
+  el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+bindBtn('#bL', 'left'); bindBtn('#bR', 'right'); bindBtn('#bG', 'up'); bindBtn('#bB', 'down');
+document.addEventListener('visibilitychange', () => { for (const k in touch) touch[k] = false; for (const k in keys) keys[k] = false; });
+
+$('#start').addEventListener('click', () => { initAudio(); newGame(); });
+$('#again').addEventListener('click', () => { newGame(); });
+
+let last = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  if (document.hidden) { last = t; return; }
+  const el = t - last;
+  if (el < 1000 / 40 - 2) return;          // ~30–40 fps cap: smooth enough, much cooler than 60/120
+  last = t; now = t;
+  const dt = Math.min(0.05, el / 1000);
+  update(dt); render(dt);
+}
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
