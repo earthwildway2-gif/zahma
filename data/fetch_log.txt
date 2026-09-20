@@ -1,0 +1,7 @@
+ok from https://overpass-api.de/api/interpreter
+1506 ways saved to /home/runner/work/zahma/zahma/data/imbaba.json
+ok from https://overpass-api.de/api/interpreter
+949 ways saved to /home/runner/work/zahma/zahma/data/downtown.json
+failed https://overpass-api.de/api/interpreter -> <HTTPError 504: 'Gateway Timeout'>
+ok from https://overpass.kumi.systems/api/interpreter
+421 ways saved to /home/runner/work/zahma/zahma/data/haram.json
