@@ -1,6 +1,10 @@
 name: GPU textures (free Kaggle GPU)
 on:
   workflow_dispatch:
+    inputs:
+      kaggle_username:
+        description: "Kaggle username (public, as in kaggle.com/<username>)"
+        required: true
 permissions:
   contents: write
 jobs:
@@ -8,20 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     env:
-      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KUSER: ${{ inputs.kaggle_username }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install kaggle
+      - run: pip install -U kaggle
       - name: Prepare the kernel
         run: |
-          test -n "$KAGGLE_USERNAME" || { echo "Missing KAGGLE_USERNAME secret"; exit 1; }
+          test -n "$KAGGLE_API_TOKEN" || { echo "Missing KAGGLE_API_TOKEN secret"; exit 1; }
           mkdir kernel && cp gpu/textures.py kernel/script.py
           cat > kernel/kernel-metadata.json <<META
-          {"id": "$KAGGLE_USERNAME/zahma-textures", "title": "zahma-textures", "code_file": "script.py",
+          {"id": "$KUSER/zahma-textures", "title": "zahma-textures", "code_file": "script.py",
            "language": "python", "kernel_type": "script", "is_private": "true",
            "enable_gpu": "true", "enable_internet": "true", "dataset_sources": [], "competition_sources": [], "kernel_sources": []}
           META
@@ -29,19 +33,19 @@ jobs:
         run: kaggle kernels push -p kernel
       - name: Wait for the GPU run to finish
         run: |
-          for i in $(seq 1 120); do
-            S=$(kaggle kernels status "$KAGGLE_USERNAME/zahma-textures" 2>&1 || true)
+          for i in $(seq 1 140); do
+            S=$(kaggle kernels status "$KUSER/zahma-textures" 2>&1 || true)
             echo "$i: $S"
             case "$S" in
               *COMPLETE*) exit 0;;
-              *ERROR*|*CANCEL*) echo "Kernel failed"; kaggle kernels output "$KAGGLE_USERNAME/zahma-textures" -p out || true; exit 1;;
+              *ERROR*|*CANCEL*) echo "Kernel failed"; kaggle kernels output "$KUSER/zahma-textures" -p out || true; ls out || true; exit 1;;
             esac
             sleep 60
           done
           echo "Timed out"; exit 1
       - name: Download and commit the textures
         run: |
-          kaggle kernels output "$KAGGLE_USERNAME/zahma-textures" -p out
+          kaggle kernels output "$KUSER/zahma-textures" -p out
           mkdir -p assets/textures && cp out/*.jpg assets/textures/
           git config user.name "zahma-bot"; git config user.email "zahma-bot@users.noreply.github.com"
           git add assets && git commit -m "Add AI-generated photoreal textures" || echo "nothing to commit"
