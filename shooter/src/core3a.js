@@ -49,7 +49,7 @@ const muzzleLight = new THREE.PointLight('#ffc070', 0, 18, 1.6); scene.add(muzzl
 const boom = { t: 0 };
 function explode(x, z, radius = 6.5, dmg = 130) {
   const p = new V3(x, 0.7, z);
-  sfxBoom(1, 0); FX.flashT = Math.max(FX.flashT, clamp(0.9 - Math.hypot(P.x - x, P.z - z) / 9, 0, 0.6)); FX.shake = Math.max(FX.shake, 1.0 / (1 + p.distanceTo(new V3(P.x, 1.6, P.z)) * 0.05)); boom.t = 0.7; boomLight.position.set(x, 2.2, z); boomLight.intensity = 9;
+  sfxBoom(1, 0); emitNoise(x, z, 60, 'boom'); moraleShock(x, z, 24, 20); FX.flashT = Math.max(FX.flashT, clamp(0.9 - Math.hypot(P.x - x, P.z - z) / 9, 0, 0.6)); FX.shake = Math.max(FX.shake, 1.0 / (1 + p.distanceTo(new V3(P.x, 1.6, P.z)) * 0.05)); boom.t = 0.7; boomLight.position.set(x, 2.2, z); boomLight.intensity = 9;
   puff(p.clone().setY(1.2), 5, 0.55, new V3(0, 1.2, 0), 0.95, 2.4, 0xffb060, true); puff(p.clone().setY(1.0), 3.4, 0.4, new V3(0, 0.6, 0), 1, 2.8, 0xfff0c0, true);
   for (let i = 0; i < 9; i++) puff(p.clone().add(new V3(rand(-1.2, 1.2), rand(0.4, 2.2), rand(-1.2, 1.2))), rand(2.5, 4.2), rand(1.6, 2.8), new V3(rand(-0.6, 0.6), rand(0.8, 1.8), rand(-0.6, 0.6)), 0.55, 2.4, 0x2b2b2b);
   sparks(p, 90, new V3(0, 1, 0), 9, 1.2, [1, 0.6, 0.2]); shock.position.set(x, 0.1, z); shock.userData.t = 0.5; shock.scale.set(1, 1, 1);

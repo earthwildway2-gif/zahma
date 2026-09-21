@@ -68,6 +68,8 @@ body.touchmode #cross{opacity:.85}
 #prompt{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:6px 14px;font-weight:700;font-size:15px;pointer-events:none;z-index:6}
 #bE{right:130px;bottom:92px;width:64px;height:64px;font-size:14px;background:rgba(255,138,43,.35);border-color:var(--accent)}
 #choice .go{margin-top:12px;width:min(420px,88vw);font-size:18px}
+#tag{position:absolute;transform:translate(-50%,-100%);background:rgba(10,13,22,.82);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:3px 9px;text-align:center;pointer-events:none;z-index:5;white-space:nowrap}
+#tag b{display:block;font-size:14px;color:#fff}#tag small{display:block;font-size:11px;color:var(--accent)}#tag i{display:block;font-size:11px;font-style:normal;color:var(--dim)}
 </style>
 </head>
 <body class="desk">
@@ -93,12 +95,13 @@ body.touchmode #cross{opacity:.85}
 <button class="btn touch hidden" id="bW">سلاح</button>
 <button class="btn touch hidden" id="bS">جري</button>
 <div id="prompt" class="hidden"></div>
+<div id="tag" class="hidden"><b></b><small></small><i></i></div>
 <button class="btn touch hidden" id="bE" style="display:none">تفاعل</button>
 <div id="choice" class="screen hidden"><h2 id="chT"></h2><button class="go" id="ch1"></button><button class="go" id="ch2"></button></div>
 <div id="title" class="screen">
   <h1>الليلة الطويلة</h1>
-  <div class="sub2">الفصل الثاني — الشنطة</div>
-  <p>اللي وصّلته امبارح مكانش هدوم. شحتة اتمسك عشان شاف اللي جوّه، وسيد ماشي لوحده داخل مخزن الحاج صلاح في الهرم الساعة تلاتة الفجر.</p>
+  <div class="sub2">الفصل الثاني — استوديو النجوم</div>
+  <p>الشنطة اللي وصّلتها امبارح لاستوديو الحاج صلاح كانت مليانة أدوية مضروبة، وشحتة اتمسك عشان شاف. والحراس؟ نجوم حقيقيين بيحبّهم الجمهور... ومعاهم سلاح. سيد ماشي لوحده الساعة تلاتة الفجر.</p>
   <p id="how">حرّك بالعصا الشمال، والفت بالسحب على اليمين، وزرار "نار" للضرب. على الكمبيوتر: WASD والماوس، وR لتعمير السلاح، و1 2 3 لتغيير السلاح.</p>
   <button class="go" id="start">ابدأ</button>
   <p id="nogl" class="hidden"></p>

@@ -55,7 +55,7 @@ function fire() {
     else if (res.type === 'lamp') { breakLamp(res.lamp); }
     else if (res.type === 'solid') surfaceFx(hp, new V3(res.nx, res.ny, res.nz), res.solid.metal);
   }
-  sfxShot(w.kind, 1, 0, 0); alertEnemies(P.x, P.z, 34);
+  sfxShot(w.kind, 1, 0, 0); emitNoise(P.x, P.z, { pistol: 26, rifle: 38, shotgun: 46 }[w.kind] || 34, 'shot');
   P.kick = Math.min(1, P.kick + w.recoil * 9); P.pitch += w.recoil * rand(0.8, 1.3); P.yaw += rand(-0.5, 0.5) * w.recoil * 0.6; FX.shake = Math.max(FX.shake, w.kind === 'shotgun' ? 0.55 : 0.16);
   mflash.material.opacity = 1; mflash2.material.opacity = 0.75; const mz = VMS[P.weapon].userData.muzzle.position; mflash.position.copy(mz).add(vm.position).add(new V3(0, 0, -0.02)); mflash2.position.copy(mflash.position);
   mflash.material.rotation = rand(0, TAU); muzzleLight.position.copy(from); muzzleLight.intensity = 6;
