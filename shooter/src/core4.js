@@ -59,6 +59,7 @@ class Enemy {
     if (this.dead) {
       this.fall = Math.min(1, this.fall + dt * 2.2); const e = 1 - Math.pow(1 - this.fall, 3); m.g.rotation.x = -e * 1.5; m.g.position.y = -e * 0.35; m.legL.rotation.x = e * 0.4; m.armL.rotation.x = e * 1.2; m.armR.rotation.z = -e * 0.8; m.gun.visible = e < 0.6; return;
     }
+    if (this.state === 'surrender') { const m = this.m; this.faceTo(P.x, P.z, dt, 4); m.armL.rotation.x = -2.8; m.armR.rotation.x = -2.8; m.armL.rotation.z = 0.3; m.armR.rotation.z = -0.3; m.legL.rotation.x = -1.4; m.legR.rotation.x = -1.4; if (m.legL.shin) { m.legL.shin.rotation.x = 2.4; m.legR.shin.rotation.x = 2.4; } m.gun.visible = false; m.g.position.set(this.x, -0.42, this.z); m.g.rotation.y = this.yaw; return; }
     const dx = P.x - this.x, dz = P.z - this.z, dist = Math.hypot(dx, dz), sees = this.sees() && !P.dead; let moving = false, sp = 0;
     if (this.state === 'patrol') {
       const w = this.patrol[this.pi]; const wx = w[0] - this.x, wz = w[1] - this.z; if (Math.hypot(wx, wz) < 0.8) { this.pi = (this.pi + 1) % this.patrol.length; } else { this.faceTo(w[0], w[1], dt, 5); this.move(wx, wz, 1.3, dt); moving = true; sp = 1.3; }

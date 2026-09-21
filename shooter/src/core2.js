@@ -23,6 +23,7 @@ addSolid(-22, -27, 0.7, 26, 8, MAT.wall, { metal: true }); addSolid(22, -27, 0.7
 addSolid(-12.25, -14, 19.5, 0.7, 8, MAT.wall, { metal: true }); addSolid(12.25, -14, 19.5, 0.7, 8, MAT.wall, { metal: true });
 addSolid(0, -14, 5, 0.7, 4.4, MAT.wall, { y: 3.6, metal: true });
 addSolid(0, -27, 44, 26, 0.4, MAT.dark, { y: 8 });
+if (AITEX.warehouse_floor) { const ft = aiTex('warehouse_floor', 8, 5); const fl = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.MeshPhongMaterial({ map: ft, shininess: 60, specular: 0x445566 })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.015, -27); worldG.add(fl); }
 const rollDoor = addSolid(0, -14, 5, 0.5, 3.6, MAT.metalGrey, { metal: true });
 // office at the back
 addSolid(-4.5, -31, 7, 0.4, 3.4, MAT.concrete); addSolid(4.5, -31, 7, 0.4, 3.4, MAT.concrete);

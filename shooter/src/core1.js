@@ -6,6 +6,8 @@ const V3 = THREE.Vector3;
 const hashText = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = (Math.imul(h, 33) ^ t.charCodeAt(i)) >>> 0; return h.toString(16); };
 const voiceKey = (who, text) => hashText(who + '|' + text);
 /*SFX_BEGIN*/const SFX = {};/*SFX_END*/
+/*AISFX_BEGIN*/const AISFX = {};/*AISFX_END*/
+/*AITEX_BEGIN*/const AITEX = {};/*AITEX_END*/
 
 /* ================= renderer / scene ================= */
 const canvas = $('#c');
@@ -60,6 +62,14 @@ const MAT = {
   barrel: phong({ color: 0xb02a1e, shininess: 30, specular: 0x553322 }), barrelBand: phong({ color: 0x2b0d09 }),
   skin: phong({ color: 0xc6906a }), hi: new THREE.MeshBasicMaterial({ color: 0xffd98a })
 };
+const AIL = new THREE.TextureLoader();
+function aiTex(name, rx, ry) { if (!AITEX[name]) return null; const t = AIL.load(AITEX[name]); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; }
+{
+  const set = (m, t, col) => { if (!t) return; m.map = t; if (col != null) m.color.setHex(col); m.needsUpdate = true; };
+  set(MAT.ground, aiTex('ground_wet', 30, 30), 0xdddddd); set(MAT.concrete, aiTex('concrete_wall', 5, 2), 0xffffff); set(MAT.crate, aiTex('wood_crate', 1, 1), 0xffffff); set(MAT.wall, aiTex('warehouse_wall', 9, 3), 0xdddddd);
+  const mp = aiTex('metal_panel', 2, 1); if (mp) { set(MAT.metalGreen, mp, 0x5f8a6b); set(MAT.metalBlue, mp, 0x4a76a3); set(MAT.metalRed, mp, 0xb05646); set(MAT.metalGrey, mp, 0xc2c8cf); }
+  if (AITEX.night_sky) { const t = AIL.load(AITEX.night_sky); const sky = new THREE.Mesh(new THREE.SphereGeometry(200, 32, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, color: 0x8c99b0, depthWrite: false })); sky.renderOrder = -10; scene.add(sky); }
+}
 
 /* ================= audio (procedural) + voices ================= */
 const AU = { wetNow: 0.32, dogT: 20, ac: null, master: null, rev: null, revG: null, noise: null, voice: true, sound: true, combat: 0, nextPulse: 0, footT: 0, warned: false };
@@ -74,7 +84,7 @@ function initAudio() {
     AU.rev = ac.createConvolver(); AU.rev.buffer = ir; AU.revG = ac.createGain(); AU.revG.gain.value = 0.34; AU.rev.connect(AU.revG); AU.revG.connect(AU.master);
     // rain bed
     const rain = ac.createBufferSource(); rain.buffer = AU.noise; rain.loop = true; const rf = ac.createBiquadFilter(); rf.type = 'lowpass'; rf.frequency.value = 2600;
-    const rg = ac.createGain(); rg.gain.value = 0.035; rain.connect(rf); rf.connect(rg); rg.connect(AU.master); rain.start();
+    const rg = ac.createGain(); rg.gain.value = 0.035; AU.rainG = rg; rain.connect(rf); rf.connect(rg); rg.connect(AU.master); rain.start();
     // tension drone
     AU.droneG = ac.createGain(); AU.droneG.gain.value = 0.03; const df = ac.createBiquadFilter(); df.type = 'lowpass'; df.frequency.value = 180; df.connect(AU.droneG); AU.droneG.connect(AU.master);
     for (const f of [55, 55.7, 82.4]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(df); o.start(); }
@@ -103,7 +113,17 @@ const BUF = {}, VBUF = {};
 async function b64buf(b64) { const bin = Uint8Array.from(atob(b64.replace(/^data:audio\/mpeg;base64,/, '')), c => c.charCodeAt(0)); return await AU.ac.decodeAudioData(bin.buffer.slice(0)); }
 async function loadSounds() {
   for (const k in SFX) { try { BUF[k] = await b64buf(SFX[k]); } catch (e) {} }
+  for (const k in AISFX) { try { BUF[k] = await b64buf(AISFX[k]); } catch (e) {} }
   for (const k in VOICE) { try { VBUF[k] = await b64buf(VOICE[k]); } catch (e) {} }
+  startBeds();
+}
+function startBeds() {           // AI-generated ambience: overlapping cross-faded loops
+  if (!AU.ac) return;
+  for (const [n, gain] of [['amb_rain', 0.55], ['amb_wind', 0.3]]) {
+    const b = BUF[n]; if (!b) continue; if (AU.rainG && n === 'amb_rain') AU.rainG.gain.value = 0.008;
+    const play = () => { const ac = AU.ac, s = ac.createBufferSource(), g = ac.createGain(), t = ac.currentTime, d = b.duration; s.buffer = b; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 1.6); g.gain.setValueAtTime(gain, t + d - 1.8); g.gain.linearRampToValueAtTime(0.0001, t + d - 0.1); s.connect(g); g.connect(AU.master); s.start(t); };
+    play(); setInterval(play, (b.duration - 2) * 1000);
+  }
 }
 function playBuf(name, o = {}) {
   const b = BUF[name]; if (!b || !AU.ac || !AU.sound) return false;
@@ -121,7 +141,7 @@ function sfxShot(kind, vol = 1, pan = 0, lp = 0) {
   const t = AU.ac.currentTime, p = SHOTS[kind], out = g => chain(g, vol * p[5], pan, 0.9, lp);
   burst(t, p[0], 0.9, 'bandpass', p[1], 0.8, out); burst(t, p[0] * 2.2, 0.35, 'lowpass', 700, 0.5, out); thump(t, p[2], p[3], p[4], 1.0, out);
 }
-function sfxStep(sprint) {
+function sfxStepSynth(sprint) {
   if (!AU.ac || !AU.sound) return;
   if (BUF.step1) { playBuf(Math.random() < 0.5 ? 'step1' : 'step2', { vol: sprint ? 0.7 : 0.42, pan: rand(-0.08, 0.08), rate: (sprint ? 1.12 : 0.95) * (0.95 + Math.random() * 0.1), wet: AU.wetNow * 0.6 }); return; }
   burst(AU.ac.currentTime, 0.07, sprint ? 0.16 : 0.09, 'lowpass', 500, 0.6, g => chain(g, 1, rand(-0.1, 0.1), 0.15, 0));
@@ -132,7 +152,7 @@ function sfxBoom(vol = 1, pan = 0) {
   burst(t, 1.4, 0.8, 'lowpass', 420, 0.5, out); thump(t, 62, 16, 1.5, 1.1, out);
   for (let i = 0; i < 6; i++) burst(t + 0.5 + Math.random() * 1.2, 0.05, 0.14, 'bandpass', 1500 + Math.random() * 2500, 2, g => chain(g, 1, (Math.random() - 0.5) * 1.2, 0.5, 0));  // debris falling
 }
-function sfxMetal() { if (!AU.ac || !AU.sound) return; if (BUF.slam) { playBuf('slam', { vol: 1, rate: 0.62, wet: 0.7, lp: 5000 }); playBuf('slam', { vol: 0.6, rate: 0.9, wet: 0.5, delay: 0.09 }); return; } const t = AU.ac.currentTime, o = g => chain(g, 0.9, 0, 0.6, 0); burst(t, 0.5, 0.7, 'bandpass', 700, 2, o); thump(t, 220, 60, 0.4, 0.8, o); }
+function sfxMetalSynth() { if (!AU.ac || !AU.sound) return; if (BUF.slam) { playBuf('slam', { vol: 1, rate: 0.62, wet: 0.7, lp: 5000 }); playBuf('slam', { vol: 0.6, rate: 0.9, wet: 0.5, delay: 0.09 }); return; } const t = AU.ac.currentTime, o = g => chain(g, 0.9, 0, 0.6, 0); burst(t, 0.5, 0.7, 'bandpass', 700, 2, o); thump(t, 220, 60, 0.4, 0.8, o); }
 function sfxWhiz(pan) {
   if (!AU.ac || !AU.sound) return; const ac = AU.ac, t = ac.currentTime, s = ac.createBufferSource(); s.buffer = AU.noise; const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3; f.frequency.setValueAtTime(5200, t); f.frequency.exponentialRampToValueAtTime(1400, t + 0.16);
   const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); s.connect(f); f.connect(g); chain(g, 1, pan, 0.2, 0); s.start(t, Math.random()); s.stop(t + 0.2);
@@ -157,13 +177,39 @@ function speak(who, text, vol = 1, o = {}) {
 function sfxTick(f, vol, dur = 0.05) { if (!AU.ac || !AU.sound) return; const t = AU.ac.currentTime, o = AU.ac.createOscillator(), g = AU.ac.createGain(); o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur); o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + dur + 0.02); }
 function sfxClick(vol = 0.4, hp = 2500) { if (!AU.ac || !AU.sound) return; burst(AU.ac.currentTime, 0.035, vol, 'highpass', hp, 0.7, g => chain(g, 1, 0, 0.1, 0)); }
 
-function sfxImpact(pan, vol, metal) { if (!AU.ac || !AU.sound) return; const t = AU.ac.currentTime; burst(t, 0.06, 0.25 * vol, 'bandpass', metal ? 3200 : 900, 1, g => chain(g, 1, pan, 0.3, 0)); if (metal) sfxTick(rand(1500, 2600), 0.05 * vol, 0.09); }
+function sfxImpactSynth(pan, vol, metal) { if (!AU.ac || !AU.sound) return; const t = AU.ac.currentTime; burst(t, 0.06, 0.25 * vol, 'bandpass', metal ? 3200 : 900, 1, g => chain(g, 1, pan, 0.3, 0)); if (metal) sfxTick(rand(1500, 2600), 0.05 * vol, 0.09); }
 
-function sfxHeart() { if (!AU.ac || !AU.sound) return; const t = AU.ac.currentTime, o = g => chain(g, 0.7, 0, 0, 0); thump(t, 62, 40, 0.13, 0.5, o); thump(t + 0.2, 56, 38, 0.13, 0.4, o); }
+function sfxHeartSynth() { if (!AU.ac || !AU.sound) return; const t = AU.ac.currentTime, o = g => chain(g, 0.7, 0, 0, 0); thump(t, 62, 40, 0.13, 0.5, o); thump(t + 0.2, 56, 38, 0.13, 0.4, o); }
 
-function musicTick() {
+function musicTick(dt) {
   if (!AU.ac) return; const t = AU.ac.currentTime; AU.droneG.gain.setTargetAtTime(0.03 + AU.combat * 0.05, t, 0.4);
   while (AU.nextPulse < t + 0.2) { if (AU.combat > 0.15) { const o = g => chain(g, 0.35 * AU.combat, 0, 0.1, 0); thump(AU.nextPulse, 90, 40, 0.16, 1, o); } AU.nextPulse += 60 / (96 + AU.combat * 30) / 2; }
+  AU.thunderT = (AU.thunderT == null ? 22 : AU.thunderT) - (dt || 0.016); if (AU.thunderT <= 0) { AU.thunderT = rand(26, 50); sfxThunder(); }
 }
 let voiceEl = null;
 
+
+function sfxStep(sprint) {
+  if (!AU.ac || !AU.sound) return; const indoor = P.z < -14 && Math.abs(P.x) < 22, set = indoor ? ['step_metal1', 'step_metal2'] : ['step_wet1', 'step_wet2', 'step_wet3'];
+  if (BUF[set[0]]) { playBuf(pickOf(set), { vol: sprint ? 0.9 : 0.6, pan: rand(-0.08, 0.08), rate: (sprint ? 1.08 : 0.97) * (0.96 + Math.random() * 0.08), wet: AU.wetNow * 0.6 }); return; }
+  sfxStepSynth(sprint);
+}
+function sfxMetal(kind) {
+  if (!AU.ac || !AU.sound) return; const nm = kind === 'gate' ? 'gate_slam' : 'door_roll';
+  if (BUF[nm]) { playBuf(nm, { vol: 1, wet: 0.7 }); if (kind === 'gate') playBuf('gate_slam', { vol: 0.4, rate: 0.7, delay: 0.12, wet: 0.8 }); return; }
+  sfxMetalSynth();
+}
+function sfxImpact(pan, vol, metal) {
+  if (!AU.ac || !AU.sound) return;
+  if (metal && BUF.ping1) { playBuf(pickOf(['ping1', 'ping2']), { vol: 0.5 * vol, pan, wet: 0.5, rate: 0.95 + Math.random() * 0.1 }); return; }
+  if (!metal && BUF.chip) { playBuf('chip', { vol: 0.6 * vol, pan, wet: 0.3, rate: 0.95 + Math.random() * 0.1 }); return; }
+  sfxImpactSynth(pan, vol, metal);
+}
+function sfxHeart() { if (!AU.ac || !AU.sound) return; if (BUF.heart) { playBuf('heart', { vol: 0.8, wet: 0.05 }); return; } sfxHeartSynth(); }
+function sfxThunder() { if (!AU.ac || !AU.sound) return; if (BUF.thunder) playBuf('thunder', { vol: 0.9, wet: 0.6, delay: 0.3 }); else { const t = AU.ac.currentTime + 0.3, o = g => chain(g, 1, 0, 0.6, 0); burst(t, 3.5, 0.5, 'lowpass', 190, 0.5, o); thump(t, 48, 24, 2.2, 0.5, o); } setTimeout(() => { FX.flashT = Math.max(FX.flashT, 0.5); }, 250); setTimeout(() => { FX.flashT = Math.max(FX.flashT, 0.3); }, 420); }
+function sfxReload(kind, total) {
+  if (!AU.ac || !AU.sound) return;
+  if (BUF.mag_in && kind !== 'shotgun') { playBuf('mag_in', { vol: 0.8, delay: 0.1, wet: AU.wetNow }); if (BUF.bolt) playBuf('bolt', { vol: 0.75, delay: Math.max(0.5, total * 0.62), wet: AU.wetNow }); return; }
+  if (BUF.bolt && kind === 'shotgun') { playBuf('bolt', { vol: 0.8, delay: total * 0.5, rate: 0.8, wet: AU.wetNow }); return; }
+  sfxClick(0.6, 1500); setTimeout(() => sfxClick(0.7, 900), total * 500);
+}

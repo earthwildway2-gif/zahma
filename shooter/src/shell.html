@@ -65,6 +65,9 @@ body.touchmode #cross{opacity:.85}
 .go{margin-top:16px;font:900 22px Cairo,Arial;background:var(--accent);color:#1a0d02;border:0;border-radius:14px;padding:13px 44px}
 .go:active{transform:scale(.97)}
 #stats{color:var(--fg);font-weight:700;line-height:1.9}
+#prompt{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);border-radius:10px;padding:6px 14px;font-weight:700;font-size:15px;pointer-events:none;z-index:6}
+#bE{right:130px;bottom:92px;width:64px;height:64px;font-size:14px;background:rgba(255,138,43,.35);border-color:var(--accent)}
+#choice .go{margin-top:12px;width:min(420px,88vw);font-size:18px}
 </style>
 </head>
 <body class="desk">
@@ -89,6 +92,9 @@ body.touchmode #cross{opacity:.85}
 <button class="btn touch hidden" id="bR">تعمير</button>
 <button class="btn touch hidden" id="bW">سلاح</button>
 <button class="btn touch hidden" id="bS">جري</button>
+<div id="prompt" class="hidden"></div>
+<button class="btn touch hidden" id="bE" style="display:none">تفاعل</button>
+<div id="choice" class="screen hidden"><h2 id="chT"></h2><button class="go" id="ch1"></button><button class="go" id="ch2"></button></div>
 <div id="title" class="screen">
   <h1>الليلة الطويلة</h1>
   <div class="sub2">الفصل الثاني — الشنطة</div>

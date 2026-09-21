@@ -36,7 +36,7 @@ const casings = []; { const geo = new THREE.BoxGeometry(0.018, 0.018, 0.055), ma
   for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(geo, mat); m.visible = false; effG.add(m); casings.push({ m, v: new V3(), life: 0, spin: new V3() }); } }
 let csI = 0;
 function ejectCasing() {
-  const c = casings[csI++ % casings.length], p = new V3(0.16, -0.16, -0.5); camera.localToWorld(p); c.m.position.copy(p); c.m.visible = true; c.life = 1.4;
+  const c = casings[csI++ % casings.length], p = new V3(0.16, -0.16, -0.5); camera.localToWorld(p); c.m.position.copy(p); c.m.visible = true; c.life = 1.4; c.snd = false;
   const r = new V3(1, 0.7, 0.1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion())); c.v.copy(r).multiplyScalar(rand(1.6, 2.6)); c.v.y += rand(0.8, 1.6); c.spin.set(rand(-20, 20), rand(-20, 20), rand(-20, 20));
 }
 // debris chunks (explosions)
@@ -75,7 +75,7 @@ function fxUpdate(dt) {
     if (SP.pos[i * 3 + 1] < 0.02) { SP.pos[i * 3 + 1] = 0.02; v.y *= -0.3; v.x *= 0.6; v.z *= 0.6; } const f = Math.max(0, SP.life[i] / 0.5); SP.col[i * 3] *= 0.97; SP.col[i * 3 + 1] *= 0.94; SP.col[i * 3 + 2] *= 0.9; if (SP.life[i] <= 0) SP.pos[i * 3 + 1] = -999; }
   if (alive) { SP.geo.attributes.position.needsUpdate = true; SP.geo.attributes.color.needsUpdate = true; }
   for (const q of puffs) if (q.life > 0) { q.life -= dt; const k = 1 - q.life / q.max; q.s.position.addScaledVector(q.vel, dt); q.s.material.opacity = q.op * (1 - k) * Math.min(1, k * 8 + 0.2); const s = q.size * (1 + k * q.grow); q.s.scale.set(s, s, 1); if (q.life <= 0) q.s.visible = false; }
-  for (const c of casings) if (c.life > 0) { c.life -= dt; c.v.y -= 9.8 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.spin.x * dt; c.m.rotation.y += c.spin.y * dt; if (c.m.position.y < 0.02) { c.m.position.y = 0.02; c.v.y *= -0.35; c.v.x *= 0.5; c.v.z *= 0.5; c.spin.multiplyScalar(0.4); } if (c.life <= 0) c.m.visible = false; }
+  for (const c of casings) if (c.life > 0) { c.life -= dt; c.v.y -= 9.8 * dt; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.spin.x * dt; c.m.rotation.y += c.spin.y * dt; if (c.m.position.y < 0.02) { if (!c.snd) { c.snd = true; playBuf(pickOf(['casing1', 'casing2']), { vol: 0.3, wet: 0.2, rate: 0.95 + Math.random() * 0.1 }); } c.m.position.y = 0.02; c.v.y *= -0.35; c.v.x *= 0.5; c.v.z *= 0.5; c.spin.multiplyScalar(0.4); } if (c.life <= 0) c.m.visible = false; }
   for (const d of debris) if (d.life > 0) { d.life -= dt; d.v.y -= 12 * dt; d.m.position.addScaledVector(d.v, dt); d.m.rotation.x += d.spin.x * dt; d.m.rotation.z += d.spin.z * dt; if (d.m.position.y < 0.05) { d.m.position.y = 0.05; d.v.multiplyScalar(0.3); d.spin.multiplyScalar(0.3); } if (d.life <= 0) d.m.visible = false; }
   if (boom.t > 0) { boom.t -= dt; boomLight.intensity = Math.max(0, boom.t / 0.7) * 9; } else boomLight.intensity = 0;
   if (shock.userData.t > 0) { shock.userData.t -= dt; const k = 1 - shock.userData.t / 0.5; shock.scale.set(1 + k * 8, 1 + k * 8, 1); shock.material.opacity = (1 - k) * 0.6; } else shock.material.opacity = 0;

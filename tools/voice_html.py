@@ -7,8 +7,8 @@ import asyncio, base64, json, pathlib, re, sys
 # who -> preferred voices (first one that exists is used), rate, pitch, timbre shift (>1 = higher/younger, <1 = deeper/older), effect
 CAST = {
     "سيد":     (["ar-EG-ShakirNeural"], "+5%", "+0Hz", 1.00, None),
-    "الأسطى":  (["ar-EG-ShakirNeural"], "-4%", "-10Hz", 0.90, "phone"),
-    "الحاج":   (["ar-EG-ShakirNeural"], "-14%", "-25Hz", 0.82, "loud"),
+    "الأسطى":  (["ar-EG-ShakirNeural"], "-4%", "-10Hz", 0.90, None),
+    "الحاج":   (["ar-EG-ShakirNeural"], "-14%", "-25Hz", 0.82, None),
     "شحتة":    (["ar-EG-ShakirNeural"], "+14%", "+20Hz", 1.25, None),
     "ليلى":    (["ar-EG-SalmaNeural"], "+3%", "+0Hz", 1.00, None),
     "الصقر":   (["ar-SA-HamedNeural", "ar-AE-HamdanNeural"], "-6%", "-10Hz", 0.90, None),

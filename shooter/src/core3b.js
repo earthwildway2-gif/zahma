@@ -64,7 +64,7 @@ function fire() {
   if (w.kind === 'shotgun') setTimeout(() => { sfxClick(0.5, 500); ejectCasing(); }, 380);
   if (a.mag === 0 && a.res > 0) setTimeout(() => { if (P.ammo[P.weapon].mag === 0) startReload(); }, 200);
 }
-function startReload() { const w = W[P.weapon], a = P.ammo[P.weapon]; if (P.reloadT > 0 || a.mag >= w.mag || a.res <= 0) return; P.reloadT = w.reload; sfxClick(0.6, 1500); setTimeout(() => sfxClick(0.7, 900), w.reload * 500); }
+function startReload() { const w = W[P.weapon], a = P.ammo[P.weapon]; if (P.reloadT > 0 || a.mag >= w.mag || a.res <= 0) return; P.reloadT = w.reload; sfxReload(w.kind, w.reload); }
 function finishReload() { const w = W[P.weapon], a = P.ammo[P.weapon], need = w.mag - a.mag, take = Math.min(need, a.res); a.mag += take; a.res -= take; sfxClick(0.7, 1200); }
 function switchWeapon(i) { if (i === P.weapon || !P.unlocked[i] || P.dead) return; P.weapon = i; P.reloadT = 0; P.swap = 0.28; showWeapon(); hudAmmo(); sfxClick(0.5, 1400); }
 function cycleWeapon() { for (let k = 1; k <= 3; k++) { const i = (P.weapon + k) % 3; if (P.unlocked[i]) { switchWeapon(i); return; } } }
