@@ -27,7 +27,14 @@ try:
 
     sh("git clone -q https://github.com/VAST-AI-Research/TripoSR /kaggle/working/TripoSR")
     sh(f"{sys.executable} -m pip install -q omegaconf einops trimesh rembg onnxruntime xatlas moderngl 'imageio[ffmpeg]' huggingface_hub")
-    sh(f"{sys.executable} -m pip install -q git+https://github.com/tatsy/torchmcubes.git")
+    # torchmcubes needs a CUDA build that fails on Kaggle: use a small scikit-image based drop-in instead
+    open("/kaggle/working/TripoSR/torchmcubes.py", "w").write(
+        "import numpy as np, torch\nfrom skimage import measure\n"
+        "def marching_cubes(vol, thresh):\n"
+        "    v = vol.detach().float().cpu().numpy()\n"
+        "    verts, faces, _, _ = measure.marching_cubes(v, level=float(thresh))\n"
+        "    verts = np.ascontiguousarray(verts[:, ::-1]); faces = np.ascontiguousarray(faces[:, [0, 2, 1]])\n"
+        "    return torch.from_numpy(verts.astype(np.float32)), torch.from_numpy(faces.astype(np.int64))\n")
     sys.path.insert(0, "/kaggle/working/TripoSR")
     import numpy as np, rembg
     from PIL import Image
