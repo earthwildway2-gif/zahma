@@ -70,3 +70,8 @@
 
 ## بناء البيانات
 `python tools/build_districts.py` بيحوّل `data/*.json` (تنزيل OpenStreetMap) لشوارع ومباني ومهام كل حي. المباني الناقصة في OSM بتتملى بمباني تقديرية على جانبي الشوارع.
+
+## لعبة التصويب (shooter/)
+- الأسلحة بأصوات تسجيلات حقيقية من Free Firearms SFX Library (رخصة CC0): https://github.com/buddingmonkey/FreeFirearmsSFXLibrary
+- باقي المؤثرات (خطوات، أبواب، مطر) مولّدة بالكود.
+- الأصوات البشرية: Microsoft neural (ar-EG) بنبرات وسرعات مختلفة لكل شخصية.

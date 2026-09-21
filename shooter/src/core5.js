@@ -204,4 +204,4 @@ if (!renderer) { $('#start').classList.add('hidden'); $('#nogl').classList.remov
 $('#start').addEventListener('click', begin); $('#again').addEventListener('click', begin);
 document.addEventListener('visibilitychange', () => { inp.fire = false; for (const k in keys) keys[k] = false; });
 resetWorld(); requestAnimationFrame(frame);
-window.__g = { layla: () => layla, startLayla, inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
+window.__g = { BUF, VBUF, AU, layla: () => layla, startLayla, inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
