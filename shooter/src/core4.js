@@ -5,31 +5,21 @@ const CFG = {
   heavy: { hp: 150, speed: 1.8, jacket: 0x3a2a24, pants: 0x1d1a18, cap: 0x2a0d0d, dmg: 20, rate: 0.9, burst: [1, 1], pause: [0.9, 1.6], pref: 8, weapon: 'shotgun', scale: 1.12, vest: 0x2c3a2a },
   boss: { hp: 750, speed: 2.7, jacket: 0x14100e, pants: 0x14100e, cap: 0x8a1e1e, dmg: 8, rate: 0.11, burst: [6, 10], pause: [0.6, 1.1], pref: 13, weapon: 'rifle', scale: 1.14, scarf: 0xb02020 }
 };
-const BARKS = { alert: ['في حد هنا!', 'مين هناك؟', 'ده الغريب!', 'ضربوه!', 'امسكوه!'], hurt: ['آه!', 'اتصاب!', 'ياااه!'], flank: ['حاصروه!', 'من الشمال!'], die: ['خلاص!'] };
+const BARK_TEXT = ['في حد هنا!', 'مين هناك؟', 'ده الغريب!', 'ضربوه!', 'امسكوه!', 'آه!', 'اتصاب!', 'حاصروه!', 'من الشمال!'];
+const BARK_WHO = ['حارس0', 'حارس1', 'حارس2', 'ثقيل', 'حارسة', 'زعيم'];
+const BARKS = { alert: [0, 1, 2, 3, 4], hurt: [5, 6], flank: [7, 8] };
 let barkCool = 0;
-function bark(kind, x, z) { if (barkCool > 0) return; const arr = BARKS[kind]; const t = arr[Math.floor(Math.random() * arr.length)]; barkCool = 1.3; const d = Math.hypot(x - P.x, z - P.z); speak('', t, clamp(1 - d / 45, 0.15, 0.85)); }
-function buildHuman(c) {
-  const g = new THREE.Group(), jacket = phong({ color: c.jacket }), pants = phong({ color: c.pants });
-  const body = box(0.5, 0.62, 0.28, 0, 1.13, 0, jacket, g), head = box(0.22, 0.24, 0.24, 0, 1.6, 0, MAT.skin, g); box(0.25, 0.09, 0.27, 0, 1.74, 0, phong({ color: c.cap }), g);
-  if (c.vest) box(0.54, 0.4, 0.32, 0, 1.18, 0, phong({ color: c.vest }), g); if (c.scarf) box(0.28, 0.1, 0.28, 0, 1.45, 0, phong({ color: c.scarf }), g);
-  const mkArm = (sx) => { const p = new THREE.Group(); p.position.set(sx * 0.33, 1.42, 0); box(0.14, 0.55, 0.14, 0, -0.27, 0, jacket, p); g.add(p); return p; };
-  const mkLeg = (sx) => { const p = new THREE.Group(); p.position.set(sx * 0.12, 0.82, 0); box(0.17, 0.8, 0.18, 0, -0.4, 0, pants, p); g.add(p); return p; };
-  const armL = mkArm(-1), armR = mkArm(1), legL = mkLeg(-1), legR = mkLeg(1);
-  const gun = new THREE.Group(); box(0.06, 0.08, c.weapon === 'shotgun' ? 0.7 : 0.55, 0, 0, 0, gunMat, gun); box(0.05, 0.1, 0.2, 0, 0, 0.3, woodMat, gun); gun.position.set(0.17, 1.22, -0.35); g.add(gun);
-  const flash = sprite(GLOW_ORANGE, 0.9, 0); flash.position.set(0.17, 1.24, -0.75); g.add(flash);
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.55, 14), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.45, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.02; g.add(shadow);
-  g.scale.setScalar(c.scale); return { g, body, head, armL, armR, legL, legR, gun, flash, mats: [jacket, pants] };
-}
+function bark(kind, e) { if (barkCool > 0 || !e) return; const arr = BARKS[kind], t = BARK_TEXT[arr[Math.floor(Math.random() * arr.length)]]; barkCool = 1.1; const d = Math.hypot(e.x - P.x, e.z - P.z), pan = clamp(Math.sin(Math.atan2(e.x - P.x, e.z - P.z) - P.yaw + Math.PI) * 0.8, -0.9, 0.9); speak(e.voice, t, clamp(1 - d / 45, 0.2, 0.9), { rate: e.vrate, pan, lp: d > 22 ? 2600 : 0, wet: d > 14 ? 0.35 : 0.15 }); }
 class Enemy {
-  constructor(type, x, z, patrol) {
-    this.type = type; this.c = CFG[type]; this.x = x; this.z = z; this.yaw = Math.PI; this.hp = this.c.hp; this.maxhp = this.c.hp; this.state = 'patrol'; this.dead = false; this.t = Math.random() * 6;
+  constructor(type, x, z, patrol, opts = {}) {
+    this.type = type; this.c = CFG[type]; this.female = !!opts.female && type === 'guard'; this.voice = type === 'heavy' ? 'ثقيل' : type === 'boss' ? 'زعيم' : (this.female ? 'حارسة' : pickOf(['حارس0', 'حارس1', 'حارس2'])); this.vrate = 0.96 + Math.random() * 0.08; this.x = x; this.z = z; this.yaw = Math.PI; this.hp = this.c.hp; this.maxhp = this.c.hp; this.state = 'patrol'; this.dead = false; this.t = Math.random() * 6;
     this.patrol = patrol || [[x, z]]; this.pi = 0; this.alertT = 0; this.shootT = 1.0; this.burst = 0; this.pauseT = 0; this.strafe = Math.random() < 0.5 ? 1 : -1; this.strafeT = rand(1, 2.5); this.lastKnown = null; this.lostT = 0; this.flashT = 0; this.hitFlash = 0; this.fall = 0; this.group_ = null; this.react = 0;
-    this.m = buildHuman(this.c); this.m.g.position.set(x, 0, z); worldG.add(this.m.g); enemies.push(this);
+    this.m = buildHuman(outfit(type, this.female)); this.m.g.position.set(x, 0, z); worldG.add(this.m.g); enemies.push(this);
   }
   hitTest(o, d, maxT) {
     const s = this.c.scale; let best = Infinity, head = false;
-    const th = raySphere(o.x, o.y, o.z, d.x, d.y, d.z, this.x, 1.6 * s, this.z, 0.2 * s); if (th < best) { best = th; head = true; }
-    const tb = rayAABB(o.x, o.y, o.z, d.x, d.y, d.z, { x: this.x - 0.3 * s, y: 0, z: this.z - 0.26 * s }, { x: this.x + 0.3 * s, y: 1.5 * s, z: this.z + 0.26 * s }); if (tb < best) { best = tb; head = false; }
+    const th = raySphere(o.x, o.y, o.z, d.x, d.y, d.z, this.x, 1.7 * s, this.z, 0.17 * s); if (th < best) { best = th; head = true; }
+    const tb = rayAABB(o.x, o.y, o.z, d.x, d.y, d.z, { x: this.x - 0.3 * s, y: 0, z: this.z - 0.26 * s }, { x: this.x + 0.3 * s, y: 1.6 * s, z: this.z + 0.26 * s }); if (tb < best) { best = tb; head = false; }
     return best < maxT ? { t: best, head } : null;
   }
   damage(n, dir, head, splash) {
@@ -37,7 +27,7 @@ class Enemy {
     if (this.state === 'patrol') { this.state = 'alert'; this.alertT = 0.15; }
     this.x += dir.x * 0.05; this.z += dir.z * 0.05;
     if (this.hp <= 0) { this.die(dir, head); return true; }
-    if (Math.random() < 0.25) bark('hurt', this.x, this.z);
+    if (Math.random() < 0.25) bark('hurt', this);
     if (this.type === 'boss' && !this.phase2 && this.hp < this.maxhp * 0.5) { this.phase2 = true; this.c = Object.assign({}, this.c, { speed: 3.3, rate: 0.09 }); if (storyHook.bossPhase) storyHook.bossPhase(this); }
     return false;
   }
@@ -62,18 +52,18 @@ class Enemy {
     const pan = clamp(Math.sin(Math.atan2(this.x - P.x, this.z - P.z) - P.yaw + Math.PI) * 0.8, -0.9, 0.9);
     sfxShot(this.type === 'heavy' ? 'shotgun' : 'enemy', clamp(1.1 - dist / 55, 0.2, 0.9), pan, dist > 25 ? 2600 : 0);
     if (hitP) hurtPlayer(this.c.dmg * (this.type === 'heavy' ? 1 : rand(0.8, 1.2)), from);
-    else { const bd = tgt.clone().sub(from).normalize(), r = rayBoxes(from.x, from.y, from.z, bd.x, bd.y, bd.z, 60); if (r !== Infinity && r < dist + 3) { const p = from.clone().addScaledVector(bd, r); sparks(p, 3, bd.clone().negate(), 2, 0.6); } if (dist < 4) sfxTick(rand(2400, 3400), 0.1, 0.12); }
+    else { if (off < 2.2) sfxWhiz(clamp(Math.sin(Math.atan2(this.x - P.x, this.z - P.z) - P.yaw + Math.PI), -0.9, 0.9)); const bd = tgt.clone().sub(from).normalize(), r = rayBoxes(from.x, from.y, from.z, bd.x, bd.y, bd.z, 60); if (r !== Infinity && r < dist + 3) { const p = from.clone().addScaledVector(bd, r); sparks(p, 3, bd.clone().negate(), 2, 0.6); } if (dist < 4) sfxTick(rand(2400, 3400), 0.1, 0.12); }
   }
   update(dt) {
     const m = this.m; this.t += dt; barkCool = Math.max(0, barkCool - dt * 0.05);
     if (this.dead) {
-      this.fall = Math.min(1, this.fall + dt * 2.2); const e = 1 - Math.pow(1 - this.fall, 3); m.g.rotation.x = -e * 1.5; m.g.position.y = -e * 0.35; m.legL.rotation.x = e * 0.4; m.armL.rotation.x = e * 1.2; m.armR.rotation.z = -e * 0.8; return;
+      this.fall = Math.min(1, this.fall + dt * 2.2); const e = 1 - Math.pow(1 - this.fall, 3); m.g.rotation.x = -e * 1.5; m.g.position.y = -e * 0.35; m.legL.rotation.x = e * 0.4; m.armL.rotation.x = e * 1.2; m.armR.rotation.z = -e * 0.8; m.gun.visible = e < 0.6; return;
     }
     const dx = P.x - this.x, dz = P.z - this.z, dist = Math.hypot(dx, dz), sees = this.sees() && !P.dead; let moving = false, sp = 0;
     if (this.state === 'patrol') {
       const w = this.patrol[this.pi]; const wx = w[0] - this.x, wz = w[1] - this.z; if (Math.hypot(wx, wz) < 0.8) { this.pi = (this.pi + 1) % this.patrol.length; } else { this.faceTo(w[0], w[1], dt, 5); this.move(wx, wz, 1.3, dt); moving = true; sp = 1.3; }
       const ang = Math.atan2(-(dx), -(dz)) - this.yaw; const inFov = Math.abs(Math.atan2(Math.sin(ang), Math.cos(ang))) < 1.1;
-      if (sees && (dist < 12 || (dist < 34 && inFov))) { this.state = 'alert'; this.alertT = 0.35 + Math.random() * 0.25; bark('alert', this.x, this.z); alertEnemies(this.x, this.z, 20); }
+      if (sees && (dist < 12 || (dist < 34 && inFov))) { this.state = 'alert'; this.alertT = 0.35 + Math.random() * 0.25; bark('alert', this); alertEnemies(this.x, this.z, 20); }
     } else if (this.state === 'alert') {
       this.faceTo(P.x, P.z, dt, 10); this.alertT -= dt; if (this.alertT <= 0) { this.state = 'combat'; this.react = 0.4; }
     } else if (this.state === 'combat') {
@@ -91,12 +81,15 @@ class Enemy {
         if (this.lostT > 8) { this.state = 'patrol'; this.lastKnown = null; }
       }
     }
-    // animation
-    const sw = moving ? Math.sin(this.t * (4 + sp * 2)) * Math.min(0.7, sp * 0.3 + 0.2) : 0; m.legL.rotation.x = sw; m.legR.rotation.x = -sw;
-    const aim = this.state === 'combat' || this.state === 'alert'; m.armR.rotation.x = aim ? -1.35 : -0.2 + -sw * 0.6; m.armL.rotation.x = aim ? -1.25 : -0.2 + sw * 0.6; m.armL.rotation.z = aim ? 0.35 : 0; m.gun.rotation.x = aim ? 0 : 0.5; m.gun.position.y = aim ? 1.22 : 1.0;
-    m.g.rotation.y = this.yaw; m.g.position.x = this.x; m.g.position.z = this.z; m.g.position.y = Math.abs(Math.sin(this.t * (4 + sp * 2))) * (moving ? 0.04 : 0);
+    // animation (positive x rotation swings a hanging limb forward)
+    const cyc = this.t * (4 + sp * 2), sw = moving ? Math.sin(cyc) * Math.min(0.75, sp * 0.3 + 0.2) : 0; m.legL.rotation.x = sw; m.legR.rotation.x = -sw;
+    m.legL.shin.rotation.x = -Math.max(0, -sw) * 1.2 - 0.05; m.legR.shin.rotation.x = -Math.max(0, sw) * 1.2 - 0.05;
+    const aim = this.state === 'combat' || this.state === 'alert', br = Math.sin(this.t * 1.7) * 0.012;
+    m.armR.rotation.set(aim ? 1.05 : -sw * 0.6, 0, aim ? 0.05 : 0); m.armR.fore.rotation.x = aim ? 0.85 : 0.25; m.armL.rotation.set(aim ? 1.32 : sw * 0.6, 0, aim ? -0.25 : 0); m.armL.fore.rotation.x = aim ? 0.35 : 0.25;
+    m.gun.rotation.set(aim ? 0 : 0.7, 0, 0); m.gun.position.set(0.1, aim ? 1.27 : 1.05, aim ? -0.27 : -0.1); m.body.position.y = br;
+    m.g.rotation.y = this.yaw; m.g.position.x = this.x; m.g.position.z = this.z; m.g.position.y = Math.abs(Math.sin(cyc)) * (moving ? 0.03 : 0);
     this.flashT = Math.max(0, this.flashT - dt); m.flash.material.opacity = this.flashT > 0 ? 1 : 0;
-    this.hitFlash = Math.max(0, this.hitFlash - dt); const hf = this.hitFlash > 0; m.mats[0].emissive.setHex(hf ? 0x881111 : 0); m.mats[1].emissive.setHex(hf ? 0x551111 : 0);
+    this.hitFlash = Math.max(0, this.hitFlash - dt); const hf = this.hitFlash > 0; m.mats[0].emissive.setHex(hf ? 0x881111 : 0);
   }
 }
 function alertEnemies(x, z, r) { for (const e of enemies) { if (e.dead || e.state !== 'patrol') continue; if (Math.hypot(e.x - x, e.z - z) < r) { e.state = 'alert'; e.alertT = 0.3 + Math.random() * 0.5; e.lastKnown = [P.x, P.z]; } } }

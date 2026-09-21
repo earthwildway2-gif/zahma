@@ -8,10 +8,9 @@ function hudHp() { $('#hp .bar i').style.width = Math.max(0, P.hp) + '%'; }
 let msgT = 0; function msg(t, ms = 2200) { const m = $('#msg'); m.textContent = t; m.classList.add('on'); clearTimeout(msgT); msgT = setTimeout(() => m.classList.remove('on'), ms); }
 function setObj(t) { $('#obj').textContent = t; }
 /* voice lines: durations are measured from the clips when available */
-const DUR = {}; for (const k in VOICE) { try { const a = new Audio(VOICE[k]); a.addEventListener('loadedmetadata', () => { DUR[k] = a.duration; }); } catch (e) {} }
-const lineDur = t => { const d = DUR[hashText(t)]; return d ? d + 0.5 : 0.9 + t.length * 0.075; };
+const lineDur = (who, text) => { const b = VBUF[voiceKey(who, text)]; return b ? b.duration + 0.45 : 0.9 + text.length * 0.075; };
 let subT = 0;
-function say(who, text) { const s = $('#sub'); s.innerHTML = '<b>' + who + ':</b>' + text; clearTimeout(subT); const d = lineDur(text); subT = setTimeout(() => { s.innerHTML = ''; }, d * 1000 + 300); speak(who, text, 1); return d; }
+function say(who, text) { const s = $('#sub'); s.innerHTML = '<b>' + who + ':</b>' + text; clearTimeout(subT); const d = lineDur(who, text); subT = setTimeout(() => { s.innerHTML = ''; }, d * 1000 + 300); speak(who, text, 1); return d; }
 function sequence(lines, done) { let i = 0; const next = () => { if (i >= lines.length) { if (done) done(); return; } const [who, text, gap] = lines[i++]; const d = say(who, text); setTimeout(next, (d + (gap || 0.25)) * 1000); }; next(); }
 
 /* every spoken line is written as { who, text } so the voice tool can find it */
@@ -30,20 +29,20 @@ const L = {
   enter: [{ who: 'الحاج صلاح', text: 'بلاش تدخل جوّه. الصقر مستنيك.' }],
   whDone: [{ who: 'سيد', text: 'شحتة! اتفضل... المكتب هناك.' }, { who: 'الصقر', text: 'جاي تلعب البطل؟ الحاج صلاح قالّي أخلّص عليك، وأنا مبخسرش.' }],
   phase2: [{ who: 'الصقر', text: 'كفاية لعب! يا رجالة، تعالوا!' }],
-  end: [{ who: 'سيد', text: 'خلاص يا شحتة، خلاص. خرّجنا من هنا.' }, { who: 'شحتة', text: 'أنا كنت هموت. الأدوية دي كتير أوي يا سيد.' }, { who: 'سيد', text: 'صوّرت كل حاجة. الشنطة هتوصل، بس للنيابة.' }]
+  end: [{ who: 'سيد', text: 'خلاص يا شحتة، خلاص. خرّجنا من هنا.' }, { who: 'شحتة', text: 'أنا كنت هموت. الأدوية دي كتير أوي يا سيد.' }],
+  layla: [{ who: 'ليلى', text: 'سيد! أنا ليلى من الجريدة. صوّرت كل حاجة من الصبح.' }, { who: 'سيد', text: 'صوّرتي إيه؟' }, { who: 'ليلى', text: 'الشحنة، والحرس، وصوت الحاج صلاح وهو بيدّي الأوامر. الفيديو ده هيوصّل للنيابة.' }, { who: 'سيد', text: 'يبقى الشنطة توصل... بس للنيابة.' }]
 };
-const BARK_LINES = [{ who: 'حارس', text: 'في حد هنا!' }, { who: 'حارس', text: 'مين هناك؟' }, { who: 'حارس', text: 'ده الغريب!' }, { who: 'حارس', text: 'ضربوه!' }, { who: 'حارس', text: 'امسكوه!' }, { who: 'حارس', text: 'آه!' }, { who: 'حارس', text: 'اتصاب!' }, { who: 'حارس', text: 'ياااه!' }, { who: 'حارس', text: 'حاصروه!' }, { who: 'حارس', text: 'من الشمال!' }, { who: 'حارس', text: 'خلاص!' }];
 const play = (arr, done) => sequence(arr.map(l => [l.who, l.text]), done);
 
 /* enemy placement */
 function spawnEnemies() {
   enemies.forEach(e => worldG.remove(e.m.g)); enemies.length = 0;
-  const E = (type, x, z, zone, patrol) => { const e = new Enemy(type, x, z, patrol); e.zone = zone; return e; };
-  E('guard', -12, 15, 'yard', [[-12, 15], [-12, 27]]); E('guard', 12, 14, 'yard', [[12, 14], [20, 27]]); E('guard', 0, 3, 'yard', [[0, 3], [-8, -3], [8, -3]]);
-  E('guard', -26, 4, 'yard', [[-26, 4], [-26, -12]]); E('guard', 27, -2, 'yard', [[27, -2], [27, -14]]); E('guard', -6, -11, 'yard', [[-6, -11], [6, -11]]);
+  const E = (type, x, z, zone, patrol, opts) => { const e = new Enemy(type, x, z, patrol, opts); e.zone = zone; return e; };
+  E('guard', -12, 15, 'yard', [[-12, 15], [-12, 27]]); E('guard', 12, 14, 'yard', [[12, 14], [20, 27]]); E('guard', 0, 3, 'yard', [[0, 3], [-8, -3], [8, -3]], { female: true });
+  E('guard', -26, 4, 'yard', [[-26, 4], [-26, -12]]); E('guard', 27, -2, 'yard', [[27, -2], [27, -14]], { female: true }); E('guard', -6, -11, 'yard', [[-6, -11], [6, -11]]);
   E('guard', 19, 8, 'yard', [[19, 8], [24, 0]]); E('guard', -20, -6, 'yard', [[-20, -6], [-14, -12]]); E('heavy', 2, 9, 'yard', [[2, 9], [-2, 9]]);
-  E('guard', -16, -20, 'wh', [[-16, -20], [-16, -30]]); E('guard', 16, -20, 'wh', [[16, -20], [16, -30]]); E('guard', 0, -24, 'wh', [[-6, -24], [6, -24]]);
-  E('guard', -16, -33, 'wh', [[-16, -33], [-6, -33]]); E('guard', 16, -33, 'wh', [[16, -33], [6, -33]]); E('guard', -4, -33, 'wh', [[-4, -33], [4, -33]]);
+  E('guard', -16, -20, 'wh', [[-16, -20], [-16, -30]]); E('guard', 16, -20, 'wh', [[16, -20], [16, -30]], { female: true }); E('guard', 0, -24, 'wh', [[-6, -24], [6, -24]]);
+  E('guard', -16, -33, 'wh', [[-16, -33], [-6, -33]], { female: true }); E('guard', 16, -33, 'wh', [[16, -33], [6, -33]]); E('guard', -4, -33, 'wh', [[-4, -33], [4, -33]]);
   E('heavy', 10, -22, 'wh', [[10, -22], [10, -28]]); E('heavy', -10, -30, 'wh', [[-10, -30], [-10, -24]]);
 }
 const S = { stage: 0 };
@@ -65,7 +64,7 @@ function winGame() {
 }
 function sfxSiren(dur = 6) { if (!AU.ac) return; const ac = AU.ac, t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.type = 'sawtooth'; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; o.connect(f); f.connect(g); g.connect(AU.master); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06, t + 1); g.gain.linearRampToValueAtTime(0, t + dur);
   for (let i = 0; i < dur * 2; i++) o.frequency.setValueAtTime(i % 2 ? 620 : 860, t + i * 0.5); o.start(t); o.stop(t + dur); }
-killHook = (e) => { if (e.type === 'boss') { S.bossDead = true; setTimeout(() => { S.stage = 6; play(L.end, () => { sfxSiren(6); setTimeout(winGame, 2600); }); }, 2200); } };
+killHook = (e) => { if (e.type === 'boss') { S.bossDead = true; setTimeout(() => { S.stage = 6; startLayla(); play(L.end, () => { play(L.layla, () => { sfxSiren(6); setTimeout(winGame, 2600); }); }); }, 2200); } };
 storyHook.bossPhase = (boss) => { play(L.phase2); const E2 = (x, z) => { const e = new Enemy('guard', x, z); e.zone = 'boss'; e.state = 'combat'; e.lastKnown = [P.x, P.z]; }; E2(-6, -24); E2(6, -24); msg('الصقر بيطلب دعم!'); };
 function storyUpdate() {
   const aliveZone = z => aliveCount(e => e.zone === z);
@@ -84,6 +83,52 @@ function itemsUpdate(dt) {
     else if (it.type === 'shotgun') { P.unlocked[2] = true; P.ammo[2].mag = 6; P.ammo[2].res = 18; switchWeapon(2); msg('شوتجن!', 1200); }
     it.taken = true; it.mesh.visible = false; hudAmmo(); sfxTick(700, 0.12, 0.15); sfxTick(1000, 0.1, 0.18); }
 }
+
+
+/* ================= Layla, the journalist (Tomb Raider-style adventurer) ================= */
+let layla = null;
+function startLayla() { if (layla) worldG.remove(layla.m.g); layla = { m: buildHuman(LAYLA), x: 0, z: -31.5, t: 0 }; layla.m.gun.visible = false; layla.m.g.position.set(0, 0, -31.5); worldG.add(layla.m.g); }
+function laylaUpdate(dt) {
+  if (!layla) return; const m = layla.m, tx = P.x + 1.4, tz = P.z + 0.6, dx = tx - layla.x, dz = tz - layla.z, d = Math.hypot(dx, dz); layla.t += dt; let moving = false;
+  if (d > 1.2) { const sp = 2.2; layla.x += dx / d * sp * dt; layla.z += dz / d * sp * dt; moving = true; }
+  const yaw = Math.atan2(-(P.x - layla.x), -(P.z - layla.z)); m.g.rotation.y = yaw; m.g.position.set(layla.x, 0, layla.z);
+  const cyc = layla.t * 8, sw = moving ? Math.sin(cyc) * 0.6 : 0; m.legL.rotation.x = sw; m.legR.rotation.x = -sw; m.legL.shin.rotation.x = -Math.max(0, -sw) * 1.1 - 0.05; m.legR.shin.rotation.x = -Math.max(0, sw) * 1.1 - 0.05;
+  m.armL.rotation.x = -sw * 0.6; m.armR.rotation.x = sw * 0.6; m.armL.fore.rotation.x = 0.3; m.armR.fore.rotation.x = 0.3; m.body.position.y = Math.sin(layla.t * 1.7) * 0.012;
+}
+
+/* ================= mini-map ================= */
+const MM = { x0: -36, z0: -42, w: 72, h: 78, ppm: 3 }, mmC = $('#mm'), mmG = mmC.getContext('2d'), mmBase = document.createElement('canvas');
+mmBase.width = MM.w * MM.ppm; mmBase.height = MM.h * MM.ppm;
+function mmBuild() {
+  const g = mmBase.getContext('2d'); g.fillStyle = '#10141b'; g.fillRect(0, 0, mmBase.width, mmBase.height);
+  const X = x => (x - MM.x0) * MM.ppm, Z = z => (z - MM.z0) * MM.ppm; g.fillStyle = '#1b2029'; g.fillRect(X(-22), Z(-40), 44 * MM.ppm, 26 * MM.ppm);
+  for (const s of solids) { if (s.y0 > 1.4 || s.y1 - s.y0 < 0.5 || !s.mesh.visible && s.mesh.material === MAT.dark) continue; const w = s.maxx - s.minx, d = s.maxz - s.minz, big = Math.max(w, d) > 12; g.fillStyle = big ? '#8b93a3' : (s.metal ? '#5b6577' : '#6b5a44'); g.fillRect(X(s.minx), Z(s.minz), Math.max(2, w * MM.ppm), Math.max(2, d * MM.ppm)); }
+  g.strokeStyle = 'rgba(255,255,255,.08)'; g.lineWidth = 1; for (let x = -36; x <= 36; x += 12) { g.beginPath(); g.moveTo(X(x), 0); g.lineTo(X(x), mmBase.height); g.stroke(); }
+}
+function mmDraw() {
+  const R = 55, sc = 1.7 / MM.ppm; mmG.clearRect(0, 0, 110, 110); mmG.save(); mmG.beginPath(); mmG.arc(R, R, R - 1, 0, TAU); mmG.clip(); mmG.fillStyle = '#0b0e13'; mmG.fillRect(0, 0, 110, 110);
+  const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rot = -Math.PI / 2 - Math.atan2(fz, fx);
+  mmG.translate(R, R); mmG.rotate(rot); mmG.scale(sc, sc); mmG.translate(-(P.x - MM.x0) * MM.ppm, -(P.z - MM.z0) * MM.ppm); mmG.drawImage(mmBase, 0, 0);
+  const px = x => (x - MM.x0) * MM.ppm, pz = z => (z - MM.z0) * MM.ppm;
+  for (const e of enemies) { if (e.dead) continue; const near = Math.hypot(e.x - P.x, e.z - P.z) < 16; if (e.state === 'patrol' && !near) continue; mmG.fillStyle = e.state === 'combat' ? '#ff4b3a' : '#ffb03a'; mmG.beginPath(); mmG.arc(px(e.x), pz(e.z), 4.2 / sc * 0.55, 0, TAU); mmG.fill(); }
+  for (const it of items) { if (it.taken) continue; if (Math.hypot(it.x - P.x, it.z - P.z) > 26) continue; mmG.fillStyle = it.type === 'health' ? '#3fe58a' : '#f0c040'; mmG.fillRect(px(it.x) - 3, pz(it.z) - 3, 6, 6); }
+  mmG.restore();
+  // objective marker, pinned to the edge when it is off the map
+  if (S.obj) { const dx = S.obj[0] - P.x, dz = S.obj[1] - P.z, d = Math.hypot(dx, dz); let ax = dx * MM.ppm * sc, az = dz * MM.ppm * sc; const ca = Math.cos(rot), sa = Math.sin(rot), rx = ax * ca - az * sa, rz = ax * sa + az * ca; let ox = rx, oy = rz; const m = Math.hypot(ox, oy), lim = R - 8; if (m > lim) { ox = ox / m * lim; oy = oy / m * lim; }
+    const pulse = 1 + Math.sin(performance.now() * 0.006) * 0.15; mmG.save(); mmG.translate(R + ox, R + oy); mmG.rotate(Math.PI / 4); mmG.fillStyle = '#ffcf3a'; mmG.strokeStyle = '#000'; mmG.lineWidth = 1.5; mmG.fillRect(-5 * pulse, -5 * pulse, 10 * pulse, 10 * pulse); mmG.strokeRect(-5 * pulse, -5 * pulse, 10 * pulse, 10 * pulse); mmG.restore(); }
+  mmG.save(); mmG.translate(R, R); mmG.fillStyle = '#ffffff'; mmG.strokeStyle = '#000'; mmG.lineWidth = 1.5; mmG.beginPath(); mmG.moveTo(0, -8); mmG.lineTo(5.5, 6); mmG.lineTo(0, 3); mmG.lineTo(-5.5, 6); mmG.closePath(); mmG.fill(); mmG.stroke(); mmG.restore();
+  mmG.strokeStyle = 'rgba(255,255,255,.35)'; mmG.lineWidth = 2; mmG.beginPath(); mmG.arc(R, R, R - 1, 0, TAU); mmG.stroke();
+}
+function nearestAlive(zone) { let best = null, bd = 1e9; for (const e of enemies) { if (e.dead || (zone && e.zone !== zone)) continue; const d = Math.hypot(e.x - P.x, e.z - P.z); if (d < bd) { bd = d; best = e; } } return best; }
+function objectiveUpdate() {
+  const st = S.stage; let o = null;
+  if (st === 0) { const r = items.find(i => i.type === 'rifle' && !i.taken); o = r ? [r.x, r.z] : [0, 8]; }
+  else if (st === 1 || st === 2) { const e = nearestAlive('yard'); o = e ? [e.x, e.z] : [0, -10]; }
+  else if (st === 3) o = [0, -14]; else if (st === 4) { const e = nearestAlive('wh'); o = e ? [e.x, e.z] : [0, -26]; }
+  else if (st === 5) { const b = enemies.find(e => e.type === 'boss' && !e.dead); o = b ? [b.x, b.z] : [0, -36]; }
+  S.obj = o;
+}
+mmBuild();
 
 /* ================= input ================= */
 const cap = (el, id) => { try { el.setPointerCapture(id); } catch (e) {} };
@@ -138,15 +183,16 @@ function screenFx(dt) {
   if (low > 0) { AU.heart = (AU.heart || 0) - dt; if (AU.heart <= 0) { sfxHeart(); AU.heart = 1.0; } }
   FX.hitT = Math.max(0, FX.hitT - dt); $('#hit').style.opacity = FX.hitT > 0 ? FX.hitT / 0.16 : 0;
   camera.position.x = (Math.random() - 0.5) * FX.shake * 0.05; camera.position.y = (Math.random() - 0.5) * FX.shake * 0.05;
+  if (AU.ac) { const indoor = P.z < -14 && Math.abs(P.x) < 22 ? 1 : 0; AU.wetNow += ((indoor ? 0.8 : 0.3) - AU.wetNow) * Math.min(1, dt * 3); AU.dogT -= dt; if (AU.dogT <= 0) { sfxDog(); AU.dogT = rand(16, 38); } if (P.hp < 40 && !P.dead) { AU.breathT = (AU.breathT || 0) - dt; if (AU.breathT <= 0) { sfxBreath(); AU.breathT = 1.7; } } }
   AU.combat = lerp(AU.combat, aliveCount(e => e.state === 'combat') > 0 ? 1 : 0, Math.min(1, dt * 1.5));
 }
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame); const raw = Math.min(0.05, (now - last) / 1000); last = now; if (!renderer) return;
   if (FX.slowT > 0) FX.slowT -= raw; const dt = raw * (FX.slowT > 0 ? 0.3 : 1);
-  if (state === 'play') { gameT += dt; playerUpdate(dt); for (const e of enemies) e.update(dt); itemsUpdate(dt); storyUpdate(); barkCool = Math.max(0, barkCool - dt); musicTick(); }
+  if (state === 'play') { gameT += dt; playerUpdate(dt); for (const e of enemies) e.update(dt); itemsUpdate(dt); storyUpdate(); objectiveUpdate(); laylaUpdate(dt); barkCool = Math.max(0, barkCool - dt); musicTick(); }
   else { yawObj.position.set(0, 1.65, 32); yawObj.rotation.y = Math.sin(now * 0.0002) * 0.25; pitchObj.rotation.x = -0.02; }
-  fxUpdate(dt); screenFx(dt); renderer.render(scene, camera);
+  fxUpdate(dt); screenFx(dt); if (state === 'play') mmDraw(); renderer.render(scene, camera);
 }
 function begin() {
   initAudio(); resetWorld(); $('#title').classList.add('hidden'); $('#end').classList.add('hidden'); $('#hud').classList.remove('hidden'); state = 'play'; hudAmmo(); hudHp();
@@ -158,4 +204,4 @@ if (!renderer) { $('#start').classList.add('hidden'); $('#nogl').classList.remov
 $('#start').addEventListener('click', begin); $('#again').addEventListener('click', begin);
 document.addEventListener('visibilitychange', () => { inp.fire = false; for (const k in keys) keys[k] = false; });
 resetWorld(); requestAnimationFrame(frame);
-window.__g = { inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
+window.__g = { layla: () => layla, startLayla, inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
