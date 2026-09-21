@@ -1,0 +1,21 @@
+name: Voice for the shooter
+on:
+  workflow_dispatch:
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install edge-tts
+      - run: python tools/voice_html.py shooter/index.html voice_shooter
+      - name: Commit
+        run: |
+          git config user.name "zahma-bot"; git config user.email "zahma-bot@users.noreply.github.com"
+          git add -A shooter voice_shooter
+          git commit -m "Shooter: Egyptian AI voice clips" || echo "nothing to commit"
+          git pull --rebase origin main && git push origin HEAD:main
