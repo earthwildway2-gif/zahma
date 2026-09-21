@@ -1,0 +1,160 @@
+$ nvidia-smi -L
+GPU 0: Tesla T4 (UUID: GPU-868f76ed-e37b-7c47-0666-4b419bf6228d)
+GPU 1: Tesla T4 (UUID: GPU-20ca8249-a537-4b3b-d38a-034ced25f447)
+
+$ pip -q install uv
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 20.4/20.4 MB 69.7 MB/s eta 0:00:00
+
+$ uv python install 3.11
+Downloading cpython-3.11.16-linux-x86_64-gnu (download) (29.4MiB)
+ Downloaded cpython-3.11.16-linux-x86_64-gnu (download)
+Installed Python 3.11.16 in 1.75s
+ + cpython-3.11.16-linux-x86_64-gnu (python3.11)
+warning: `/root/.local/bin` is not on your PATH. To use installed Python executables, run `export PATH="/root/.local/bin:$PATH"` or `uv python update-shell`.
+
+$ uv venv --python 3.11 /tmp/venv
+warning: The `--system` flag has no effect, `uv venv` always ignores virtual environments when finding a Python interpreter; did you mean `--no-managed-python`?
+Using CPython 3.11.16
+Creating virtual environment at: /tmp/venv
+Activate with: source /tmp/venv/bin/activate
+
+$ uv pip install --python /tmp/venv/bin/python bpy
+Using Python 3.11.16 environment at: /tmp/venv
+Resolved 9 packages in 506ms
+Downloading cython (3.3MiB)
+Downloading bpy (356.9MiB)
+Downloading zstandard (5.3MiB)
+Downloading numpy (17.4MiB)
+ Downloaded cython
+ Downloaded zstandard
+ Downloaded numpy
+ Downloaded bpy
+Prepared 9 packages in 6.75s
+Installed 9 packages in 79ms
+ + bpy==5.0.1
+ + certifi==2026.7.22
+ + charset-normalizer==3.5.1
+ + cython==3.3.0
+ + idna==3.20
+ + numpy==1.26.4
+ + requests==2.34.2
+ + urllib3==2.8.0
+ + zstandard==0.25.0
+
+$ apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libxi6 libxrender1 libgl1 libsm6 libxkbcommon0 libxxf86vm1 libxfixes3 libegl1 ffmpeg
+W: Skipping acquire of configured file 'main/source/Sources' as repository 'https://r2u.stat.illinois.edu/ubuntu jammy InRelease' does not seem to provide it (sources.list entry misspelt?)
+
+setup done in 40s
+$ /tmp/venv/bin/python /tmp/work/render_scene.py --data /tmp/work/data/districts.json --tex /tmp/work/tex --device GPU --district 0 --out /kaggle/working --res 1920x1080 --samples 96 --stills 3
+00:01.878  cycles           | WARNING HIPEW initialization failed: Error opening HIP dynamic library
+DEVICE GPU:OPTIX:Tesla T4,Tesla T4,Tesla T4,Tesla T4
+/tmp/work/render_scene.py:52: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  w = bpy.data.worlds.new("World"); sc.world = w; w.use_nodes = True
+/tmp/work/render_scene.py:67: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True; nt = mat.node_tree
+SCENE 611 buildings 365 roads
+00:28.556  render           | Saved: '/kaggle/working/imbaba_still1.jpg'
+STILL 1
+00:49.870  render           | Saved: '/kaggle/working/imbaba_still2.jpg'
+STILL 2
+01:11.563  render           | Saved: '/kaggle/working/imbaba_still3.jpg'
+STILL 3
+DONE
+
+$ /tmp/venv/bin/python /tmp/work/render_scene.py --data /tmp/work/data/districts.json --tex /tmp/work/tex --device GPU --district 1 --out /kaggle/working --res 1920x1080 --samples 96 --stills 3
+00:00.686  cycles           | WARNING HIPEW initialization failed: Error opening HIP dynamic library
+DEVICE GPU:OPTIX:Tesla T4,Tesla T4,Tesla T4,Tesla T4
+/tmp/work/render_scene.py:52: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  w = bpy.data.worlds.new("World"); sc.world = w; w.use_nodes = True
+/tmp/work/render_scene.py:67: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True; nt = mat.node_tree
+SCENE 519 buildings 137 roads
+00:25.393  render           | Saved: '/kaggle/working/downtown_still1.jpg'
+STILL 1
+00:47.481  render           | Saved: '/kaggle/working/downtown_still2.jpg'
+STILL 2
+01:09.476  render           | Saved: '/kaggle/working/downtown_still3.jpg'
+STILL 3
+DONE
+
+$ /tmp/venv/bin/python /tmp/work/render_scene.py --data /tmp/work/data/districts.json --tex /tmp/work/tex --device GPU --district 2 --out /kaggle/working --res 1920x1080 --samples 96 --stills 3
+00:00.628  cycles           | WARNING HIPEW initialization failed: Error opening HIP dynamic library
+DEVICE GPU:OPTIX:Tesla T4,Tesla T4,Tesla T4,Tesla T4
+/tmp/work/render_scene.py:52: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  w = bpy.data.worlds.new("World"); sc.world = w; w.use_nodes = True
+/tmp/work/render_scene.py:67: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True; nt = mat.node_tree
+SCENE 432 buildings 194 roads
+00:24.957  render           | Saved: '/kaggle/working/haram_still1.jpg'
+STILL 1
+00:46.933  render           | Saved: '/kaggle/working/haram_still2.jpg'
+STILL 2
+01:08.064  render           | Saved: '/kaggle/working/haram_still3.jpg'
+STILL 3
+DONE
+
+$ /tmp/venv/bin/python /tmp/work/render_scene.py --data /tmp/work/data/districts.json --tex /tmp/work/tex --device GPU --district 0 --out /tmp/work/vid --res 1280x720 --samples 40 --stills 0 --video-frames 120
+png'
+13:48.059  render           | Saved: '/tmp/work/vid/frames/f0099.png'
+13:56.208  render           | Saved: '/tmp/work/vid/frames/f0100.png'
+FRAME 100
+14:04.448  render           | Saved: '/tmp/work/vid/frames/f0101.png'
+14:12.711  render           | Saved: '/tmp/work/vid/frames/f0102.png'
+14:20.925  render           | Saved: '/tmp/work/vid/frames/f0103.png'
+14:29.057  render           | Saved: '/tmp/work/vid/frames/f0104.png'
+14:37.211  render           | Saved: '/tmp/work/vid/frames/f0105.png'
+14:45.442  render           | Saved: '/tmp/work/vid/frames/f0106.png'
+14:53.677  render           | Saved: '/tmp/work/vid/frames/f0107.png'
+15:01.869  render           | Saved: '/tmp/work/vid/frames/f0108.png'
+15:10.145  render           | Saved: '/tmp/work/vid/frames/f0109.png'
+15:18.289  render           | Saved: '/tmp/work/vid/frames/f0110.png'
+FRAME 110
+15:26.342  render           | Saved: '/tmp/work/vid/frames/f0111.png'
+15:34.638  render           | Saved: '/tmp/work/vid/frames/f0112.png'
+15:42.778  render           | Saved: '/tmp/work/vid/frames/f0113.png'
+15:50.942  render           | Saved: '/tmp/work/vid/frames/f0114.png'
+15:58.977  render           | Saved: '/tmp/work/vid/frames/f0115.png'
+16:07.043  render           | Saved: '/tmp/work/vid/frames/f0116.png'
+16:15.101  render           | Saved: '/tmp/work/vid/frames/f0117.png'
+16:23.279  render           | Saved: '/tmp/work/vid/frames/f0118.png'
+16:31.420  render           | Saved: '/tmp/work/vid/frames/f0119.png'
+DONE
+
+$ /usr/bin/ffmpeg -y -framerate 24 -i /tmp/work/vid/frames/f%04d.png -c:v libx264 -pix_fmt yuv420p -crf 20 /kaggle/working/imbaba_drive.mp4
+ qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to '/kaggle/working/imbaba_drive.mp4':
+  Metadata:
+    encoder         : Lavf58.76.100
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720 [SAR 1:1 DAR 16:9], q=2-31, 24 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc58.134.100 libx264
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    1 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    
+frame=   47 fps=0.0 q=0.0 size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    
+frame=   63 fps= 53 q=25.0 size=       0kB time=00:00:00.41 bitrate=   0.9kbits/s speed=0.349x    
+frame=   78 fps= 46 q=25.0 size=     256kB time=00:00:01.04 bitrate=2013.5kbits/s speed=0.614x    
+frame=   94 fps= 42 q=25.0 size=     256kB time=00:00:01.70 bitrate=1227.8kbits/s speed=0.767x    
+frame=  109 fps= 40 q=25.0 size=     512kB time=00:00:02.33 bitrate=1797.7kbits/s speed=0.849x    
+frame=  120 fps= 28 q=-1.0 Lsize=    1148kB time=00:00:04.87 bitrate=1929.0kbits/s speed=1.15x    
+video:1146kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.198174%
+[libx264 @ 0x556e80d3c080] frame I:1     Avg QP:17.44  size: 61292
+[libx264 @ 0x556e80d3c080] frame P:30    Avg QP:18.11  size: 22437
+[libx264 @ 0x556e80d3c080] frame B:89    Avg QP:22.37  size:  4923
+[libx264 @ 0x556e80d3c080] consecutive B-frames:  0.8%  0.0%  2.5% 96.7%
+[libx264 @ 0x556e80d3c080] mb I  I16..4: 29.1% 40.4% 30.6%
+[libx264 @ 0x556e80d3c080] mb P  I16..4:  2.2%  3.0%  0.9%  P16..4: 32.0% 20.9% 13.5%  0.0%  0.0%    skip:27.5%
+[libx264 @ 0x556e80d3c080] mb B  I16..4:  0.3%  0.1%  0.0%  B16..8: 41.8%  5.5%  0.6%  direct: 1.0%  skip:50.7%  L0:41.5% L1:48.5% BI:10.0%
+[libx264 @ 0x556e80d3c080] 8x8 transform intra:43.1% inter:83.0%
+[libx264 @ 0x556e80d3c080] coded y,uvDC,uvAC intra: 49.4% 44.7% 23.6% inter: 14.4% 11.4% 0.8%
+[libx264 @ 0x556e80d3c080] i16 v,h,dc,p: 28% 43%  4% 25%
+[libx264 @ 0x556e80d3c080] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 22% 20% 40%  3%  3%  2%  5%  2%  5%
+[libx264 @ 0x556e80d3c080] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 40% 23% 17%  4%  2%  2%  5%  2%  3%
+[libx264 @ 0x556e80d3c080] i8c dc,h,v,p: 58% 18% 20%  4%
+[libx264 @ 0x556e80d3c080] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x556e80d3c080] ref P L0: 62.5% 19.0% 13.0%  5.5%
+[libx264 @ 0x556e80d3c080] ref B L0: 88.9%  9.0%  2.1%
+[libx264 @ 0x556e80d3c080] ref B L1: 93.0%  7.0%
+[libx264 @ 0x556e80d3c080] kb/s:1876.03
+
+finished in 1249s; files: ['downtown_still1.jpg', 'downtown_still2.jpg', 'downtown_still3.jpg', 'haram_still1.jpg', 'haram_still2.jpg', 'haram_still3.jpg', 'imbaba_drive.mp4', 'imbaba_still1.jpg', 'imbaba_still2.jpg', 'imbaba_still3.jpg', 'run.log']
