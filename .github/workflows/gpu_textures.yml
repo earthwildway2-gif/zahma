@@ -5,6 +5,10 @@ on:
       kaggle_username:
         description: "Kaggle username (public, as in kaggle.com/<username>)"
         required: true
+      script:
+        description: "which script in gpu/ to run"
+        required: true
+        default: textures.py
 permissions:
   contents: write
 jobs:
@@ -23,9 +27,9 @@ jobs:
       - name: Prepare the kernel
         run: |
           test -n "$KAGGLE_API_TOKEN" || { echo "Missing KAGGLE_API_TOKEN secret"; exit 1; }
-          mkdir kernel && cp gpu/textures.py kernel/script.py
+          mkdir kernel && cp "gpu/${{ inputs.script }}" kernel/script.py
           cat > kernel/kernel-metadata.json <<META
-          {"id": "$KUSER/zahma-textures", "title": "zahma-textures", "code_file": "script.py",
+          {"id": "$KUSER/zahma-gpu-job", "title": "zahma-gpu-job", "code_file": "script.py",
            "language": "python", "kernel_type": "script", "is_private": "true",
            "enable_gpu": "true", "enable_internet": "true", "dataset_sources": [], "competition_sources": [], "kernel_sources": []}
           META
@@ -34,19 +38,23 @@ jobs:
       - name: Wait for the GPU run to finish
         run: |
           for i in $(seq 1 140); do
-            S=$(kaggle kernels status "$KUSER/zahma-textures" 2>&1 || true)
+            S=$(kaggle kernels status "$KUSER/zahma-gpu-job" 2>&1 || true)
             echo "$i: $S"
             case "$S" in
               *COMPLETE*) exit 0;;
-              *ERROR*|*CANCEL*) echo "Kernel failed"; kaggle kernels output "$KUSER/zahma-textures" -p out || true; ls out || true; exit 1;;
+              *ERROR*|*CANCEL*) echo "Kernel failed"; kaggle kernels output "$KUSER/zahma-gpu-job" -p out || true; ls out || true; exit 1;;
             esac
             sleep 60
           done
           echo "Timed out"; exit 1
-      - name: Download and commit the textures
+      - name: Download and commit the results
+        if: always()
         run: |
-          kaggle kernels output "$KUSER/zahma-textures" -p out
-          mkdir -p assets/textures && cp out/*.jpg assets/textures/
+          kaggle kernels output "$KUSER/zahma-gpu-job" -p out || true
+          mkdir -p assets/textures assets/models gpu_out
+          cp out/*.jpg assets/textures/ 2>/dev/null || true
+          cp out/models/*.glb assets/models/ 2>/dev/null || true
+          cp out/log.txt gpu_out/log.txt 2>/dev/null || true
           git config user.name "zahma-bot"; git config user.email "zahma-bot@users.noreply.github.com"
-          git add assets && git commit -m "Add AI-generated photoreal textures" || echo "nothing to commit"
+          git add assets gpu_out && git commit -m "GPU job results" || echo "nothing to commit"
           git pull --rebase origin main && git push origin HEAD:main
