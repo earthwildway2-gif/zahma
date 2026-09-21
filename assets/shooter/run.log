@@ -1,0 +1,150 @@
+$ /usr/bin/python3 -m pip -q install diffusers transformers accelerate safetensors scipy imageio-ffmpeg soundfile -> 0 
+ffmpeg /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 | GPU Tesla T4
+tex ok ground_wet
+tex ok concrete_wall
+tex ok metal_panel
+tex ok wood_crate
+tex ok warehouse_floor
+tex ok warehouse_wall
+tex ok night_sky
+sfx FAIL amb_rain .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL amb_wind .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL thunder .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL step_wet1 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL step_wet2 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL step_wet3 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL step_metal1 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL step_metal2 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL door_roll .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL gate_slam .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL mag_in .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL bolt .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL casing1 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL casing2 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL explosion .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL ping1 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL ping2 .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL chip .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL radio .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+sfx FAIL heart .12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 353, in generate_language_model
+    model_kwargs = self.language_model._update_model_kwargs_for_generation(output, model_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1965, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPT2Model' object has no attribute '_update_model_kwargs_for_generation'
+
+finished in 482s; files: ['concrete_wall.jpg', 'ground_wet.jpg', 'metal_panel.jpg', 'night_sky.jpg', 'run.log', 'warehouse_floor.jpg', 'warehouse_wall.jpg', 'wood_crate.jpg']
