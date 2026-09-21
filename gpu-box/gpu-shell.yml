@@ -1,0 +1,29 @@
+# Copy to .github/workflows/gpu-shell.yml in the PRIVATE gpu repo. Lets Claude run a command on the rented GPU box.
+name: GPU shell
+on:
+  workflow_dispatch:
+    inputs:
+      cmd:
+        description: "bash command to run on the GPU machine"
+        required: true
+jobs:
+  run:
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run
+        shell: bash
+        env:
+          CMD: ${{ inputs.cmd }}
+          EPIC_GH_TOKEN: ${{ secrets.EPIC_GH_TOKEN }}
+        run: |
+          mkdir -p logs
+          set +e; bash -lc "$CMD" 2>&1 | tail -n 400 | tee "logs/${GITHUB_RUN_ID}.txt"
+      - name: Commit logs and images
+        if: always()
+        run: |
+          git config user.name "gpu-bot"; git config user.email "gpu-bot@users.noreply.github.com"
+          git add -A logs shots 2>/dev/null || true
+          git commit -m "gpu run ${GITHUB_RUN_ID}" || true
+          git pull --rebase origin main && git push origin HEAD:main
