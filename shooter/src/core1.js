@@ -66,7 +66,7 @@ const AIL = new THREE.TextureLoader();
 function aiTex(name, rx, ry) { if (!AITEX[name]) return null; const t = AIL.load(AITEX[name]); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; }
 {
   const set = (m, t, col) => { if (!t) return; m.map = t; if (col != null) m.color.setHex(col); m.needsUpdate = true; };
-  set(MAT.ground, aiTex('ground_wet', 30, 30), 0xdddddd); set(MAT.concrete, aiTex('concrete_wall', 5, 2), 0xffffff); set(MAT.crate, aiTex('wood_crate', 1, 1), 0xffffff); set(MAT.wall, aiTex('warehouse_wall', 9, 3), 0xdddddd);
+  set(MAT.ground, aiTex('ground_wet', 55, 55), 0x8f8f8f); set(MAT.concrete, aiTex('concrete_wall', 5, 2), 0xffffff); set(MAT.crate, aiTex('wood_crate', 1, 1), 0xffffff); set(MAT.wall, aiTex('metal_panel', 12, 3), 0xb5bbc2);
   const mp = aiTex('metal_panel', 2, 1); if (mp) { set(MAT.metalGreen, mp, 0x5f8a6b); set(MAT.metalBlue, mp, 0x4a76a3); set(MAT.metalRed, mp, 0xb05646); set(MAT.metalGrey, mp, 0xc2c8cf); }
   if (AITEX.night_sky) { const t = AIL.load(AITEX.night_sky); const sky = new THREE.Mesh(new THREE.SphereGeometry(200, 32, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, color: 0x8c99b0, depthWrite: false })); sky.renderOrder = -10; scene.add(sky); }
 }
@@ -129,7 +129,9 @@ function playBuf(name, o = {}) {
   const b = BUF[name]; if (!b || !AU.ac || !AU.sound) return false;
   const ac = AU.ac, s = ac.createBufferSource(); s.buffer = b; s.playbackRate.value = o.rate || 1; let n = s;
   if (o.hp) { const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = o.hp; n.connect(f); n = f; }
-  chain(n, o.vol == null ? 1 : o.vol, o.pan || 0, o.wet == null ? AU.wetNow : o.wet, o.lp || 0); s.start(ac.currentTime + (o.delay || 0)); return true;
+  let stopAt = 0;
+  if (o.dur) { const g2 = ac.createGain(), t0 = ac.currentTime + (o.delay || 0); g2.gain.setValueAtTime(1, t0); g2.gain.setValueAtTime(1, t0 + Math.max(0.05, o.dur - 0.12)); g2.gain.linearRampToValueAtTime(0.0001, t0 + o.dur); n.connect(g2); n = g2; stopAt = t0 + o.dur + 0.05; }
+  chain(n, o.vol == null ? 1 : o.vol, o.pan || 0, o.wet == null ? AU.wetNow : o.wet, o.lp || 0); s.start(ac.currentTime + (o.delay || 0)); if (stopAt) s.stop(stopAt); return true;
 }
 const pickOf = a => a[Math.floor(Math.random() * a.length)];
 function sfxShot(kind, vol = 1, pan = 0, lp = 0) {
@@ -191,7 +193,7 @@ let voiceEl = null;
 
 function sfxStep(sprint) {
   if (!AU.ac || !AU.sound) return; const indoor = P.z < -14 && Math.abs(P.x) < 22, set = indoor ? ['step_metal1', 'step_metal2'] : ['step_wet1', 'step_wet2', 'step_wet3'];
-  if (BUF[set[0]]) { playBuf(pickOf(set), { vol: sprint ? 0.9 : 0.6, pan: rand(-0.08, 0.08), rate: (sprint ? 1.08 : 0.97) * (0.96 + Math.random() * 0.08), wet: AU.wetNow * 0.6 }); return; }
+  if (BUF[set[0]]) { playBuf(pickOf(set), { vol: sprint ? 0.5 : 0.34, dur: 0.55, pan: rand(-0.08, 0.08), rate: (sprint ? 1.08 : 0.97) * (0.96 + Math.random() * 0.08), wet: AU.wetNow * 0.6 }); return; }
   sfxStepSynth(sprint);
 }
 function sfxMetal(kind) {
@@ -201,11 +203,11 @@ function sfxMetal(kind) {
 }
 function sfxImpact(pan, vol, metal) {
   if (!AU.ac || !AU.sound) return;
-  if (metal && BUF.ping1) { playBuf(pickOf(['ping1', 'ping2']), { vol: 0.5 * vol, pan, wet: 0.5, rate: 0.95 + Math.random() * 0.1 }); return; }
-  if (!metal && BUF.chip) { playBuf('chip', { vol: 0.6 * vol, pan, wet: 0.3, rate: 0.95 + Math.random() * 0.1 }); return; }
+  if (metal && BUF.ping1) { playBuf(pickOf(['ping1', 'ping2']), { vol: 0.42 * vol, dur: 1.1, pan, wet: 0.5, rate: 0.95 + Math.random() * 0.1 }); return; }
+  if (!metal && BUF.chip) { playBuf('chip', { vol: 0.5 * vol, dur: 0.8, pan, wet: 0.3, rate: 0.95 + Math.random() * 0.1 }); return; }
   sfxImpactSynth(pan, vol, metal);
 }
-function sfxHeart() { if (!AU.ac || !AU.sound) return; if (BUF.heart) { playBuf('heart', { vol: 0.8, wet: 0.05 }); return; } sfxHeartSynth(); }
+function sfxHeart() { if (!AU.ac || !AU.sound) return; if (BUF.heart) { playBuf('heart', { vol: 0.7, dur: 1.0, wet: 0.05 }); return; } sfxHeartSynth(); }
 function sfxThunder() { if (!AU.ac || !AU.sound) return; if (BUF.thunder) playBuf('thunder', { vol: 0.9, wet: 0.6, delay: 0.3 }); else { const t = AU.ac.currentTime + 0.3, o = g => chain(g, 1, 0, 0.6, 0); burst(t, 3.5, 0.5, 'lowpass', 190, 0.5, o); thump(t, 48, 24, 2.2, 0.5, o); } setTimeout(() => { FX.flashT = Math.max(FX.flashT, 0.5); }, 250); setTimeout(() => { FX.flashT = Math.max(FX.flashT, 0.3); }, 420); }
 function sfxReload(kind, total) {
   if (!AU.ac || !AU.sound) return;

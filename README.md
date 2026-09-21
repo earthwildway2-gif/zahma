@@ -75,3 +75,8 @@
 - الأسلحة بأصوات تسجيلات حقيقية من Free Firearms SFX Library (رخصة CC0): https://github.com/buddingmonkey/FreeFirearmsSFXLibrary
 - باقي المؤثرات (خطوات، أبواب، مطر) مولّدة بالكود.
 - الأصوات البشرية: Microsoft neural (ar-EG) بنبرات وسرعات مختلفة لكل شخصية.
+
+### مؤثرات وبيئة مولّدة بالذكاء الاصطناعي (لعبة التصويب)
+- الخامات (أرضية، خرسانة، معدن، خشب، سماء العاصفة): Stable Diffusion XL على GPU مجاني (Kaggle) عن طريق `gpu/shooter_assets.py`.
+- مؤثرات الصوت (خطوات، أبواب، مطر، رعد، انفجار، تعمير): AudioLDM 2 (`cvssp/audioldm2`) عن طريق `gpu/shooter_sfx.py`. رخصة النموذج CC BY-NC-SA 4.0: للاستخدام غير التجاري فقط ومع الإشارة.
+- أصوات الشخصيات: أصوات عربية متعددة من Microsoft neural (edge-tts)، لكل شخصية صوت مختلف، عن طريق `tools/voice_html.py`.
