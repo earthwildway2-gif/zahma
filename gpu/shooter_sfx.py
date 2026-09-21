@@ -9,6 +9,7 @@ def sh(c):
 t0 = time.time()
 try:
     sh(f"{sys.executable} -m pip -q install transformers==4.42.4 diffusers==0.30.3 accelerate safetensors scipy imageio-ffmpeg soundfile")
+    sh(f"{sys.executable} -m pip -q uninstall -y peft")   # preinstalled peft needs a newer transformers than the one AudioLDM2 works with
     import numpy as np, torch
     import imageio_ffmpeg; FF = imageio_ffmpeg.get_ffmpeg_exe(); log("ffmpeg", FF, "| GPU", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "NONE")
     # ---------------- sound effects ----------------
