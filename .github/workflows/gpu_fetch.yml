@@ -1,0 +1,33 @@
+name: GPU fetch latest output
+on:
+  workflow_dispatch:
+    inputs:
+      kaggle_username:
+        required: true
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+      KUSER: ${{ inputs.kaggle_username }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -U kaggle
+      - name: Status
+        run: kaggle kernels status "$KUSER/zahma-gpu-job" || true
+      - name: Download and commit
+        run: |
+          kaggle kernels output "$KUSER/zahma-gpu-job" -p out || true
+          ls -R out | head -50
+          mkdir -p assets/textures assets/models gpu_out
+          cp out/*.jpg assets/textures/ 2>/dev/null || true
+          cp out/models/*.glb assets/models/ 2>/dev/null || true
+          cp out/log.txt gpu_out/log.txt 2>/dev/null || true
+          git config user.name "zahma-bot"; git config user.email "zahma-bot@users.noreply.github.com"
+          git add assets gpu_out && git commit -m "GPU fetch" || echo "nothing to commit"
+          git pull --rebase origin main && git push origin HEAD:main
