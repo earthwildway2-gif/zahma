@@ -43,9 +43,10 @@ body.cine #bars i{height:12%}
 #msg{position:absolute;left:50%;top:32%;transform:translateX(-50%);font-size:26px;font-weight:900;text-align:center;text-shadow:0 2px 10px #000;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap}
 #msg.on{opacity:1}
 /* touch */
-#stick{position:absolute;left:0;bottom:0;width:46%;height:52%;touch-action:none}
+#stick{position:absolute;left:0;top:0;width:46%;height:100%;touch-action:none}
 #knob{position:absolute;width:92px;height:92px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);display:none}
 #knob i{position:absolute;left:31px;top:31px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.4)}
+#ring{position:absolute;left:34px;bottom:30px;width:96px;height:96px;border-radius:50%;border:2px dashed rgba(255,255,255,.25);pointer-events:none}
 #look{position:absolute;right:0;top:0;width:54%;height:100%;touch-action:none}
 .btn{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(10,13,22,.5);color:var(--fg);font:900 15px Cairo,Arial;display:flex;align-items:center;justify-content:center;touch-action:none;padding:0;z-index:5}
 .btn.on{background:rgba(255,138,43,.7)}
@@ -80,6 +81,7 @@ body.touchmode #cross{opacity:.85}
 <div id="msg"></div>
 <div id="bars"><i></i><i></i></div>
 <div id="stick" class="touch hidden"><div id="knob"><i></i></div></div>
+<div id="ring" class="touch hidden"></div>
 <div id="look" class="touch hidden"></div>
 <button class="btn touch hidden" id="bF">نار</button>
 <button class="btn touch hidden" id="bR">تعمير</button>

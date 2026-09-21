@@ -86,6 +86,7 @@ function itemsUpdate(dt) {
 }
 
 /* ================= input ================= */
+const cap = (el, id) => { try { el.setPointerCapture(id); } catch (e) {} };
 const keys = {}; const inp = { lookX: 0, lookY: 0, mx: 0, my: 0, fire: false, touch: false };
 addEventListener('keydown', e => { keys[e.code] = true; if (state !== 'play') return; if (e.code === 'KeyR') startReload(); if (e.code === 'Digit1') switchWeapon(0); if (e.code === 'Digit2') switchWeapon(1); if (e.code === 'Digit3') switchWeapon(2); if (e.code === 'KeyQ') cycleWeapon(); });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -93,18 +94,18 @@ canvas.addEventListener('mousedown', e => { if (state !== 'play' || inp.touch) r
 addEventListener('mouseup', () => { if (!inp.touch) inp.fire = false; });
 addEventListener('mousemove', e => { if (document.pointerLockElement === canvas) { inp.lookX += e.movementX * 0.0022; inp.lookY += e.movementY * 0.0022; } });
 function enableTouch() { if (inp.touch) return; inp.touch = true; P.aimAssist = true; document.body.classList.remove('desk'); document.body.classList.add('touchmode'); document.querySelectorAll('.touch').forEach(e => e.classList.remove('hidden')); }
-if (matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window) { enableTouch(); }
-addEventListener('touchstart', enableTouch, { passive: true });
+if (matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0) { enableTouch(); }
+addEventListener('touchstart', enableTouch, { passive: true }); addEventListener('pointerdown', e => { if (e.pointerType === 'touch') enableTouch(); }, true);
 { const st = $('#stick'), knob = $('#knob'); let sid = null, ox = 0, oy = 0;
-  st.addEventListener('pointerdown', e => { if (sid !== null) return; sid = e.pointerId; st.setPointerCapture(sid); ox = e.clientX; oy = e.clientY; knob.style.display = 'block'; knob.style.left = (ox - 46) + 'px'; knob.style.top = (oy - 46) + 'px'; knob.style.position = 'fixed'; });
+  st.addEventListener('pointerdown', e => { if (sid !== null) return; sid = e.pointerId; cap(st, sid); ox = e.clientX; oy = e.clientY; knob.style.display = 'block'; knob.style.left = (ox - 46) + 'px'; knob.style.top = (oy - 46) + 'px'; knob.style.position = 'fixed'; });
   st.addEventListener('pointermove', e => { if (e.pointerId !== sid) return; let dx = (e.clientX - ox) / 46, dy = (e.clientY - oy) / 46; const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; } inp.mx = dx; inp.my = dy; knob.firstElementChild.style.transform = 'translate(' + dx * 30 + 'px,' + dy * 30 + 'px)'; });
   const up = e => { if (e.pointerId !== sid) return; sid = null; inp.mx = inp.my = 0; knob.style.display = 'none'; knob.firstElementChild.style.transform = ''; };
   st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up); }
 { const lk = $('#look'); let lid = null, lx = 0, ly = 0;
-  lk.addEventListener('pointerdown', e => { if (lid !== null) return; lid = e.pointerId; lk.setPointerCapture(lid); lx = e.clientX; ly = e.clientY; });
+  lk.addEventListener('pointerdown', e => { if (lid !== null) return; lid = e.pointerId; cap(lk, lid); lx = e.clientX; ly = e.clientY; });
   lk.addEventListener('pointermove', e => { if (e.pointerId !== lid) return; inp.lookX += (e.clientX - lx) * 0.0058; inp.lookY += (e.clientY - ly) * 0.0058; lx = e.clientX; ly = e.clientY; });
   const up = e => { if (e.pointerId === lid) lid = null; }; lk.addEventListener('pointerup', up); lk.addEventListener('pointercancel', up); }
-function bindHold(id, on, off) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture(e.pointerId); el.classList.add('on'); on(); }); const up = e => { el.classList.remove('on'); if (off) off(); }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); }
+function bindHold(id, on, off) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); cap(el, e.pointerId); el.classList.add('on'); on(); }); const up = e => { el.classList.remove('on'); if (off) off(); }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); }
 bindHold('#bF', () => { inp.fire = true; }, () => { inp.fire = false; }); bindHold('#bR', startReload); bindHold('#bW', cycleWeapon); bindHold('#bS', () => { P.sprint = !P.sprint; });
 
 /* ================= per-frame ================= */
@@ -119,7 +120,7 @@ function playerUpdate(dt) {
   const speed = Math.hypot(P.vx, P.vz); P.bob += dt * speed * 1.9; P.stepT -= dt * speed; if (P.stepT <= 0 && speed > 1) { sfxStep(sprint); P.stepT = 2.1; }
   P.fireT = Math.max(0, P.fireT - dt); P.swap = Math.max(0, P.swap - dt); P.kick = Math.max(0, P.kick - dt * 7);
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { P.reloadT = 0; finishReload(); hudAmmo(); } }
-  if (inp.fire && (W[P.weapon].auto || !P.wasFire)) { fire(); hudAmmo(); stat.shots++; } P.wasFire = inp.fire;
+  if (inp.fire && (W[P.weapon].auto || inp.touch || !P.wasFire)) { fire(); hudAmmo(); stat.shots++; } P.wasFire = inp.fire;
   if (performance.now() / 1000 - P.lastHurt > 6 && P.hp < 60) { P.hp = Math.min(60, P.hp + dt * 4); }
   hudHp();
   yawObj.position.set(P.x, 1.65 + Math.sin(P.bob) * 0.035 * Math.min(1, speed / 4), P.z); yawObj.rotation.y = P.yaw;
@@ -150,11 +151,11 @@ function frame(now) {
 function begin() {
   initAudio(); resetWorld(); $('#title').classList.add('hidden'); $('#end').classList.add('hidden'); $('#hud').classList.remove('hidden'); state = 'play'; hudAmmo(); hudHp();
   if (!inp.touch && canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} }
-  P.frozen = true; document.body.classList.add('cine'); setObj('...');
-  play(L.intro, () => { P.frozen = false; document.body.classList.remove('cine'); setObj('خد السلاح من جنب الصناديق قدامك'); msg('الليلة الطويلة', 2600); });
+  P.frozen = false; document.body.classList.remove('cine'); setObj('خد السلاح من جنب الصناديق قدامك'); msg(inp.touch ? 'العصا الشمال للحركة، واسحب يمين للفت' : 'WASD للحركة والماوس للفت', 4000);
+  play(L.intro);
 }
 if (!renderer) { $('#start').classList.add('hidden'); $('#nogl').classList.remove('hidden'); $('#nogl').textContent = 'الـ 3D مش شغال على جهازك أو المتصفح ده.'; }
 $('#start').addEventListener('click', begin); $('#again').addEventListener('click', begin);
 document.addEventListener('visibilitychange', () => { inp.fire = false; for (const k in keys) keys[k] = false; });
 resetWorld(); requestAnimationFrame(frame);
-window.__g = { hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
+window.__g = { inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
