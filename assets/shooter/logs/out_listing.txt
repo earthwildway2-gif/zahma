@@ -1,5 +1,25 @@
-total 40
-drwxr-xr-x  2 runner runner  4096 Sep 21 18:42 .
-drwxr-xr-x 19 runner runner  4096 Sep 21 18:42 ..
--rw-r--r--  1 runner runner  9455 Sep 21 18:42 run.log
--rw-r--r--  1 runner runner 18495 Sep 21 18:42 zahma-shooter-sfx.log
+total 620
+drwxr-xr-x  2 runner runner  4096 Sep 21 18:49 .
+drwxr-xr-x 19 runner runner  4096 Sep 21 18:48 ..
+-rw-r--r--  1 runner runner 70856 Sep 21 18:48 amb_rain.mp3
+-rw-r--r--  1 runner runner 70856 Sep 21 18:48 amb_wind.mp3
+-rw-r--r--  1 runner runner 14912 Sep 21 18:48 bolt.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 casing1.mp3
+-rw-r--r--  1 runner runner 13400 Sep 21 18:48 casing2.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 chip.mp3
+-rw-r--r--  1 runner runner 29024 Sep 21 18:48 door_roll.mp3
+-rw-r--r--  1 runner runner 35828 Sep 21 18:48 explosion.mp3
+-rw-r--r--  1 runner runner 25496 Sep 21 18:48 gate_slam.mp3
+-rw-r--r--  1 runner runner 29024 Sep 21 18:48 heart.mp3
+-rw-r--r--  1 runner runner 14912 Sep 21 18:48 mag_in.mp3
+-rw-r--r--  1 runner runner 14912 Sep 21 18:48 ping1.mp3
+-rw-r--r--  1 runner runner 13400 Sep 21 18:48 ping2.mp3
+-rw-r--r--  1 runner runner 18440 Sep 21 18:48 radio.mp3
+-rw-r--r--  1 runner runner 13813 Sep 21 18:48 run.log
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 step_metal1.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 step_metal2.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 step_wet1.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 step_wet2.mp3
+-rw-r--r--  1 runner runner 12140 Sep 21 18:48 step_wet3.mp3
+-rw-r--r--  1 runner runner 42884 Sep 21 18:49 thunder.mp3
+-rw-r--r--  1 runner runner 98149 Sep 21 18:49 zahma-shooter-sfx.log

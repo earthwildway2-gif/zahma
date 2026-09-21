@@ -4,125 +4,206 @@ tifffile 2026.4.11 requires numpy>=2.0, but you have numpy 1.26.4 which is incom
 opencv-contrib-python 4.13.0.92 requires numpy>=2; python_version >= "3.9", but you have numpy 1.26.4 which is incompatible.
 shap 0.51.0 requires numpy>=2, but you have numpy 1.26.4 which is incompatible.
 
+$ /usr/bin/python3 -m pip -q uninstall -y peft -> 0 
 ffmpeg /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 | GPU Tesla T4
-FATAL Traceback (most recent call last):
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 830, in _get_module
-    return importlib.import_module("." + module_name, self.__name__)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/loaders/unet.py", line 46, in <module>
-    from .lora_pipeline import LORA_WEIGHT_NAME, LORA_WEIGHT_NAME_SAFE, TEXT_ENCODER_NAME, UNET_NAME
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/loaders/lora_pipeline.py", line 33, in <module>
-    from .lora_base import LoraBaseMixin
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/loaders/lora_base.py", line 47, in <module>
-    from peft.tuners.tuners_utils import BaseTunerLayer
-  File "/usr/local/lib/python3.12/dist-packages/peft/__init__.py", line 17, in <module>
-    from .auto import (
-  File "/usr/local/lib/python3.12/dist-packages/peft/auto.py", line 32, in <module>
-    from .peft_model import (
-  File "/usr/local/lib/python3.12/dist-packages/peft/peft_model.py", line 38, in <module>
-    from transformers import Cache, DynamicCache, EncoderDecoderCache, PreTrainedModel
-ImportError: cannot import name 'EncoderDecoderCache' from 'transformers' (/usr/local/lib/python3.12/dist-packages/transformers/__init__.py)
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/amb_rain.wav -af "afade=t=in:d=0.01,afade=t=out:st=9.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/amb_rain.mp3 -> 0 /kaggle/working/amb_rain.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x76c3700] video:0KiB audio:69KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.419501%
+size=      69KiB time=00:00:10.00 bitrate=  56.7kbits/s speed= 161x    
 
-The above exception was the direct cause of the following exception:
+sfx ok amb_rain
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/amb_wind.wav -af "afade=t=in:d=0.01,afade=t=out:st=9.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/amb_wind.mp3 -> 0 kaggle/working/amb_wind.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x42c77700] video:0KiB audio:69KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.419501%
+size=      69KiB time=00:00:10.00 bitrate=  56.7kbits/s speed= 175x    
 
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 830, in _get_module
-    return importlib.import_module("." + module_name, self.__name__)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1310, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/autoencoders/__init__.py", line 1, in <module>
-    from .autoencoder_asym_kl import AsymmetricAutoencoderKL
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/autoencoders/autoencoder_asym_kl.py", line 23, in <module>
-    from .vae import DecoderOutput, DiagonalGaussianDistribution, Encoder, MaskConditionDecoder
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/autoencoders/vae.py", line 25, in <module>
-    from ..unets.unet_2d_blocks import (
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/unets/__init__.py", line 6, in <module>
-    from .unet_2d import UNet2DModel
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/unets/unet_2d.py", line 24, in <module>
-    from .unet_2d_blocks import UNetMidBlock2D, get_down_block, get_up_block
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/unets/unet_2d_blocks.py", line 36, in <module>
-    from ..transformers.dual_transformer_2d import DualTransformer2DModel
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/transformers/__init__.py", line 13, in <module>
-    from .prior_transformer import PriorTransformer
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/models/transformers/prior_transformer.py", line 9, in <module>
-    from ...loaders import PeftAdapterMixin, UNet2DConditionLoadersMixin
-  File "<frozen importlib._bootstrap>", line 1412, in _handle_fromlist
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 820, in __getattr__
-    module = self._get_module(self._class_to_module[name])
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 832, in _get_module
-    raise RuntimeError(
-RuntimeError: Failed to import diffusers.loaders.unet because of the following error (look up to see its traceback):
-cannot import name 'EncoderDecoderCache' from 'transformers' (/usr/local/lib/python3.12/dist-packages/transformers/__init__.py)
+sfx ok amb_wind
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/thunder.wav -af "afade=t=in:d=0.01,afade=t=out:st=5.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/thunder.mp3 -> 0 /kaggle/working/thunder.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x19417700] video:0KiB audio:42KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.695031%
+size=      42KiB time=00:00:06.00 bitrate=  57.2kbits/s speed= 207x    
 
-The above exception was the direct cause of the following exception:
+sfx ok thunder
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/step_wet1.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/step_wet1.mp3 -> 0 aggle/working/step_wet1.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x23530380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 127x    
 
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 830, in _get_module
-    return importlib.import_module("." + module_name, self.__name__)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/pipelines/audioldm2/pipeline_audioldm2.py", line 34, in <module>
-    from ...models import AutoencoderKL
-  File "<frozen importlib._bootstrap>", line 1412, in _handle_fromlist
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 820, in __getattr__
-    module = self._get_module(self._class_to_module[name])
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 832, in _get_module
-    raise RuntimeError(
-RuntimeError: Failed to import diffusers.models.autoencoders.autoencoder_kl because of the following error (look up to see its traceback):
-Failed to import diffusers.loaders.unet because of the following error (look up to see its traceback):
-cannot import name 'EncoderDecoderCache' from 'transformers' (/usr/local/lib/python3.12/dist-packages/transformers/__init__.py)
+sfx ok step_wet1
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/step_wet2.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/step_wet2.mp3 -> 0 aggle/working/step_wet2.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x20886380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 145x    
 
-The above exception was the direct cause of the following exception:
+sfx ok step_wet2
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/step_wet3.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/step_wet3.mp3 -> 0 aggle/working/step_wet3.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x14512380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 131x    
 
-Traceback (most recent call last):
-  File "/kaggle/src/script.py", line 15, in <module>
-    from diffusers import AudioLDM2Pipeline
-  File "<frozen importlib._bootstrap>", line 1412, in _handle_fromlist
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 821, in __getattr__
-    value = getattr(module, name)
-            ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 821, in __getattr__
-    value = getattr(module, name)
-            ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 820, in __getattr__
-    module = self._get_module(self._class_to_module[name])
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.12/dist-packages/diffusers/utils/import_utils.py", line 832, in _get_module
-    raise RuntimeError(
-RuntimeError: Failed to import diffusers.pipelines.audioldm2.pipeline_audioldm2 because of the following error (look up to see its traceback):
-Failed to import diffusers.models.autoencoders.autoencoder_kl because of the following error (look up to see its traceback):
-Failed to import diffusers.loaders.unet because of the following error (look up to see its traceback):
-cannot import name 'EncoderDecoderCache' from 'transformers' (/usr/local/lib/python3.12/dist-packages/transformers/__init__.py)
+sfx ok step_wet3
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/step_metal1.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/step_metal1.mp3 -> 0 gle/working/step_metal1.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x18bc0380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 139x    
 
-finished in 35s; files: ['run.log']
+sfx ok step_metal1
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/step_metal2.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/step_metal2.mp3 -> 0 gle/working/step_metal2.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x328fe380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 132x    
+
+sfx ok step_metal2
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/door_roll.wav -af "afade=t=in:d=0.01,afade=t=out:st=3.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/door_roll.mp3 -> 0 aggle/working/door_roll.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x28274700] video:0KiB audio:28KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.030354%
+size=      28KiB time=00:00:04.00 bitrate=  58.0kbits/s speed= 214x    
+
+sfx ok door_roll
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/gate_slam.wav -af "afade=t=in:d=0.01,afade=t=out:st=3.35:d=0.15" -ac 1 -b:a 56k /kaggle/working/gate_slam.mp3 -> 0 aggle/working/gate_slam.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x1da97700] video:0KiB audio:25KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.174603%
+size=      25KiB time=00:00:03.50 bitrate=  58.3kbits/s speed= 154x    
+
+sfx ok gate_slam
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/mag_in.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/mag_in.mp3 -> 0 '/kaggle/working/mag_in.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x37273280] video:0KiB audio:14KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.025178%
+size=      15KiB time=00:00:02.00 bitrate=  59.6kbits/s speed= 163x    
+
+sfx ok mag_in
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/bolt.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/bolt.mp3 -> 0 o '/kaggle/working/bolt.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x2b904280] video:0KiB audio:14KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.025178%
+size=      15KiB time=00:00:02.00 bitrate=  59.6kbits/s speed= 133x    
+
+sfx ok bolt
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/casing1.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/casing1.mp3 -> 0 /kaggle/working/casing1.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x1cb47380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 137x    
+
+sfx ok casing1
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/casing2.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.6500000000000001:d=0.15" -ac 1 -b:a 56k /kaggle/working/casing2.mp3 -> 0 '/kaggle/working/casing2.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0xc2cb480] video:0KiB audio:13KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.258852%
+size=      13KiB time=00:00:01.80 bitrate=  59.6kbits/s speed= 151x    
+
+sfx ok casing2
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/explosion.wav -af "afade=t=in:d=0.01,afade=t=out:st=4.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/explosion.mp3 -> 0 kaggle/working/explosion.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0xa3d1700] video:0KiB audio:35KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.833052%
+size=      35KiB time=00:00:05.00 bitrate=  57.3kbits/s speed= 182x    
+
+sfx ok explosion
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/ping1.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/ping1.mp3 -> 0  '/kaggle/working/ping1.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x22d17280] video:0KiB audio:14KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.025178%
+size=      15KiB time=00:00:02.00 bitrate=  59.6kbits/s speed= 160x    
+
+sfx ok ping1
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/ping2.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.6500000000000001:d=0.15" -ac 1 -b:a 56k /kaggle/working/ping2.mp3 -> 0 o '/kaggle/working/ping2.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x797f480] video:0KiB audio:13KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.258852%
+size=      13KiB time=00:00:01.80 bitrate=  59.6kbits/s speed= 138x    
+
+sfx ok ping2
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/chip.wav -af "afade=t=in:d=0.01,afade=t=out:st=1.4500000000000002:d=0.15" -ac 1 -b:a 56k /kaggle/working/chip.mp3 -> 0 o '/kaggle/working/chip.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x32448380] video:0KiB audio:12KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 2.499156%
+size=      12KiB time=00:00:01.60 bitrate=  60.7kbits/s speed= 118x    
+
+sfx ok chip
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/radio.wav -af "afade=t=in:d=0.01,afade=t=out:st=2.35:d=0.15" -ac 1 -b:a 56k /kaggle/working/radio.mp3 -> 0  '/kaggle/working/radio.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x44079f80] video:0KiB audio:18KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.631393%
+size=      18KiB time=00:00:02.50 bitrate=  59.0kbits/s speed= 170x    
+
+sfx ok radio
+$ /usr/local/lib/python3.12/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2 -y -i /tmp/heart.wav -af "afade=t=in:d=0.01,afade=t=out:st=3.85:d=0.15" -ac 1 -b:a 56k /kaggle/working/heart.mp3 -> 0  '/kaggle/working/heart.mp3':
+  Metadata:
+    TSSE            : Lavf61.1.100
+  Stream #0:0: Audio: mp3, 16000 Hz, mono, s16p, 56 kb/s
+      Metadata:
+        encoder         : Lavc61.3.100 libmp3lame
+[out#0/mp3 @ 0x1ebc1700] video:0KiB audio:28KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.030354%
+size=      28KiB time=00:00:04.00 bitrate=  58.0kbits/s speed= 193x    
+
+sfx ok heart
+finished in 263s; files: ['amb_rain.mp3', 'amb_wind.mp3', 'bolt.mp3', 'casing1.mp3', 'casing2.mp3', 'chip.mp3', 'door_roll.mp3', 'explosion.mp3', 'gate_slam.mp3', 'heart.mp3', 'mag_in.mp3', 'ping1.mp3', 'ping2.mp3', 'radio.mp3', 'run.log', 'step_metal1.mp3', 'step_metal2.mp3', 'step_wet1.mp3', 'step_wet2.mp3', 'step_wet3.mp3', 'thunder.mp3']
