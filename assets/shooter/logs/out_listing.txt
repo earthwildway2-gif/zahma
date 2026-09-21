@@ -1,0 +1,5 @@
+total 40
+drwxr-xr-x  2 runner runner  4096 Sep 21 18:42 .
+drwxr-xr-x 19 runner runner  4096 Sep 21 18:42 ..
+-rw-r--r--  1 runner runner  9455 Sep 21 18:42 run.log
+-rw-r--r--  1 runner runner 18495 Sep 21 18:42 zahma-shooter-sfx.log
