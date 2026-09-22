@@ -1,0 +1,318 @@
+extends Node3D
+
+var player: Player
+var yard_enemies: Array = []
+var wh_enemies: Array = []
+var boss: Enemy = null
+var warehouse_door: StaticBody3D
+var stage := 0  # 0 = clear yard, 1 = clear warehouse, 2 = boss, 3 = won
+
+var hud_health: Label
+var hud_ammo: Label
+var hud_status: Label
+var hud_msg: Label
+var crosshair: ColorRect
+
+func _ready() -> void:
+	_build_environment()
+	_build_ground()
+	_build_yard()
+	_build_warehouse()
+	_spawn_player()
+	_spawn_yard_enemies()
+	_spawn_pickups()
+	_build_hud()
+	_set_status("خلّص الحرس اللي في الحوش")
+
+func _build_environment() -> void:
+	var env := WorldEnvironment.new()
+	var e := Environment.new()
+	e.background_mode = Environment.BG_SKY
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.05, 0.07, 0.14)
+	sky_mat.sky_horizon_color = Color(0.12, 0.11, 0.16)
+	sky_mat.ground_bottom_color = Color(0.02, 0.02, 0.03)
+	sky_mat.ground_horizon_color = Color(0.08, 0.08, 0.1)
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	e.sky = sky
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	e.fog_enabled = true
+	e.fog_light_color = Color(0.1, 0.12, 0.18)
+	e.fog_density = 0.014
+	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	e.glow_enabled = true
+	e.glow_intensity = 0.7
+	env.environment = e
+	add_child(env)
+
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-55, -35, 0)
+	moon.light_color = Color(0.75, 0.8, 1.0)
+	moon.light_energy = 1.1
+	moon.shadow_enabled = true
+	add_child(moon)
+
+func _build_ground() -> void:
+	var body := StaticBody3D.new()
+	body.name = "Ground"
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(90, 0.2, 130)
+	col.shape = shape
+	col.position.y = -0.1
+	body.add_child(col)
+	var mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(90, 130)
+	mesh.mesh = plane
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.18, 0.18, 0.2)
+	mat.roughness = 0.9
+	mesh.material_override = mat
+	body.add_child(mesh)
+	body.position.z = -15
+	add_child(body)
+
+func _add_box(pos: Vector3, size: Vector3, color: Color, name_hint := "") -> StaticBody3D:
+	var body := StaticBody3D.new()
+	if name_hint != "": body.name = name_hint
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	col.shape = shape
+	body.add_child(col)
+	var mesh := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mesh.mesh = box
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 0.8
+	mesh.material_override = mat
+	body.add_child(mesh)
+	body.position = pos
+	add_child(body)
+	return body
+
+func _add_lamp(pos: Vector3) -> void:
+	_add_box(pos + Vector3(0, 2.5, 0), Vector3(0.15, 5.0, 0.15), Color(0.15, 0.15, 0.17))
+	var light := OmniLight3D.new()
+	light.position = pos + Vector3(0, 5.0, 0)
+	light.light_color = Color(1.0, 0.85, 0.55)
+	light.light_energy = 2.2
+	light.omni_range = 12.0
+	add_child(light)
+
+func _build_yard() -> void:
+	var crate_color := Color(0.35, 0.26, 0.15)
+	var positions := [
+		Vector3(-6, 0.5, -2), Vector3(4, 0.5, -6), Vector3(8, 0.5, 4),
+		Vector3(-9, 0.5, 8), Vector3(0, 0.5, -10), Vector3(-4, 0.5, 12),
+		Vector3(10, 0.5, -4), Vector3(-11, 0.5, -6)
+	]
+	for p in positions:
+		_add_box(p, Vector3(1.4, 1.0, 1.4), crate_color)
+	_add_box(Vector3(0, 2, 22), Vector3(44, 4, 1), Color(0.2, 0.2, 0.24))
+	_add_box(Vector3(-22, 2, 5), Vector3(1, 4, 34), Color(0.2, 0.2, 0.24))
+	_add_box(Vector3(22, 2, 5), Vector3(1, 4, 34), Color(0.2, 0.2, 0.24))
+	_add_lamp(Vector3(-14, 0, 10))
+	_add_lamp(Vector3(14, 0, 10))
+	_add_lamp(Vector3(-14, 0, -6))
+	_add_lamp(Vector3(14, 0, -6))
+	_add_box(Vector3(-16, 1.5, -10), Vector3(3, 3, 6), Color(0.3, 0.42, 0.36))
+	_add_box(Vector3(16, 1.5, -12), Vector3(3, 3, 6), Color(0.42, 0.3, 0.28))
+
+func _build_warehouse() -> void:
+	var wall_col := Color(0.22, 0.22, 0.26)
+	_add_box(Vector3(0, 2.5, -50), Vector3(28, 5, 1), wall_col)
+	_add_box(Vector3(-14, 2.5, -31), Vector3(1, 5, 38), wall_col)
+	_add_box(Vector3(14, 2.5, -31), Vector3(1, 5, 38), wall_col)
+	_add_box(Vector3(-9, 2.5, -12), Vector3(10, 5, 1), wall_col)
+	_add_box(Vector3(9, 2.5, -12), Vector3(10, 5, 1), wall_col)
+	var floor_body := StaticBody3D.new()
+	var fcol := CollisionShape3D.new(); var fshape := BoxShape3D.new(); fshape.size = Vector3(28, 0.2, 38); fcol.shape = fshape; fcol.position.y = -0.1
+	floor_body.add_child(fcol)
+	var fmesh := MeshInstance3D.new(); var fplane := PlaneMesh.new(); fplane.size = Vector2(28, 38); fmesh.mesh = fplane
+	var fmat := StandardMaterial3D.new(); fmat.albedo_color = Color(0.14, 0.14, 0.17); fmat.roughness = 0.6
+	fmesh.material_override = fmat
+	floor_body.add_child(fmesh)
+	floor_body.position = Vector3(0, 0.01, -31)
+	add_child(floor_body)
+	warehouse_door = _add_box(Vector3(0, 2.5, -12), Vector3(8, 5, 0.6), Color(0.3, 0.28, 0.26), "WarehouseDoor")
+	for p in [Vector3(-6, 0.5, -20), Vector3(6, 0.5, -22), Vector3(-4, 0.5, -34), Vector3(5, 0.5, -38), Vector3(0, 0.5, -44)]:
+		_add_box(p, Vector3(1.5, 1.0, 1.5), Color(0.32, 0.24, 0.14))
+	_add_lamp(Vector3(-8, 0, -20))
+	_add_lamp(Vector3(8, 0, -20))
+	_add_lamp(Vector3(0, 0, -40))
+
+func _spawn_player() -> void:
+	player = Player.new()
+	player.position = Vector3(0, 1, 15)
+	add_child(player)
+	player.died.connect(_on_player_died)
+
+func _spawn_yard_enemies() -> void:
+	var spots := [Vector3(-6, 1, -2), Vector3(5, 1, -6), Vector3(9, 1, 4), Vector3(-8, 1, 8)]
+	var names := ["المطرب كوكو الأسمر", "الكابتن قرش الكورة", "المؤثرة ميرو ستار", "الفنان عادل التمثيل"]
+	var colors := [Color(0.55, 0.18, 0.16), Color(0.2, 0.32, 0.5), Color(0.5, 0.22, 0.45), Color(0.3, 0.45, 0.25)]
+	for i in spots.size():
+		var en := Enemy.new()
+		en.enemy_name = names[i]
+		en.body_color = colors[i]
+		en.position = spots[i]
+		add_child(en)
+		en.died.connect(_on_yard_enemy_died)
+		yard_enemies.append(en)
+
+func _spawn_warehouse_enemies() -> void:
+	var spots := [Vector3(-6, 1, -20), Vector3(6, 1, -22), Vector3(-5, 1, -38), Vector3(6, 1, -40)]
+	var names := ["المذيع لطفي آخر الليل", "الدوبلير عم صبحي الخطر", "رجل الأعمال منير الذهب", "المطرب دودو ستار"]
+	var colors := [Color(0.4, 0.35, 0.15), Color(0.45, 0.2, 0.2), Color(0.25, 0.25, 0.5), Color(0.5, 0.3, 0.1)]
+	for i in spots.size():
+		var en := Enemy.new()
+		en.enemy_name = names[i]
+		en.body_color = colors[i]
+		en.detect_radius = 12.0
+		en.position = spots[i]
+		add_child(en)
+		en.died.connect(_on_wh_enemy_died)
+		wh_enemies.append(en)
+
+func _spawn_boss() -> void:
+	boss = Enemy.new()
+	boss.enemy_name = "النجم سيف الصقر"
+	boss.body_color = Color(0.6, 0.15, 0.12)
+	boss.max_health = 220.0
+	boss.damage = 8.0
+	boss.speed = 2.8
+	boss.chase_speed = 4.0
+	boss.detect_radius = 30.0
+	boss.attack_range = 11.0
+	boss.is_boss = true
+	boss.position = Vector3(0, 1, -46)
+	add_child(boss)
+	boss.died.connect(_on_boss_died)
+	_set_status("النجم سيف الصقر: 100%")
+
+func _spawn_pickups() -> void:
+	var rifle := Pickup.new()
+	rifle.kind = Pickup.Kind.WEAPON
+	rifle.weapon_id = "rifle"
+	rifle.position = Vector3(6, 0.3, -8)
+	add_child(rifle)
+
+	var shotgun := Pickup.new()
+	shotgun.kind = Pickup.Kind.WEAPON
+	shotgun.weapon_id = "shotgun"
+	shotgun.position = Vector3(-4, 0.3, -30)
+	add_child(shotgun)
+
+	for p in [Vector3(-8, 0.3, 6), Vector3(9, 0.3, -18), Vector3(-2, 0.3, -42)]:
+		var ammo := Pickup.new()
+		ammo.kind = Pickup.Kind.AMMO
+		ammo.weapon_id = "pistol"
+		ammo.ammo_amount = 24
+		ammo.position = p
+		add_child(ammo)
+
+	var heal := Pickup.new()
+	heal.kind = Pickup.Kind.HEALTH
+	heal.heal_amount = 40.0
+	heal.position = Vector3(2, 0.3, 2)
+	add_child(heal)
+
+func _build_hud() -> void:
+	var layer := CanvasLayer.new()
+	add_child(layer)
+
+	crosshair = ColorRect.new()
+	crosshair.color = Color(1, 1, 1, 0.9)
+	crosshair.size = Vector2(3, 3)
+	crosshair.set_anchors_preset(Control.PRESET_CENTER)
+	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(crosshair)
+
+	hud_health = Label.new()
+	hud_health.position = Vector2(24, 24)
+	hud_health.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_health.add_theme_font_size_override("font_size", 22)
+	layer.add_child(hud_health)
+
+	hud_ammo = Label.new()
+	hud_ammo.position = Vector2(24, 54)
+	hud_ammo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_ammo.add_theme_font_size_override("font_size", 18)
+	layer.add_child(hud_ammo)
+
+	hud_status = Label.new()
+	hud_status.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	hud_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_status.position = Vector2(0, 20)
+	hud_status.add_theme_font_size_override("font_size", 20)
+	layer.add_child(hud_status)
+
+	hud_msg = Label.new()
+	hud_msg.set_anchors_preset(Control.PRESET_CENTER)
+	hud_msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hud_msg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_msg.add_theme_font_size_override("font_size", 28)
+	hud_msg.modulate = Color(1, 1, 1, 0)
+	layer.add_child(hud_msg)
+
+	player.health_changed.connect(func(hp, max_hp): hud_health.text = "الصحة: %d / %d" % [hp, max_hp])
+	player.ammo_changed.connect(func(m, r, wname): hud_ammo.text = "%s: %d / %d" % [wname, m, r])
+	hud_health.text = "الصحة: 100 / 100"
+	hud_ammo.text = "مسدس: 12 / 48"
+
+func _set_status(text: String) -> void:
+	hud_status.text = text
+
+func _flash_msg(text: String) -> void:
+	hud_msg.text = text
+	hud_msg.modulate.a = 1.0
+	var tw := create_tween()
+	tw.tween_interval(1.4)
+	tw.tween_property(hud_msg, "modulate:a", 0.0, 0.8)
+
+func _on_yard_enemy_died(_e) -> void:
+	var alive := 0
+	for e in yard_enemies:
+		if e.state != "dead": alive += 1
+	if alive == 0 and stage == 0:
+		stage = 1
+		warehouse_door.queue_free()
+		_flash_msg("الباب اتفتح")
+		_set_status("ادخل المخزن")
+		_spawn_warehouse_enemies()
+	else:
+		_set_status("خلّص الحرس اللي في الحوش: %d" % alive)
+
+func _on_wh_enemy_died(_e) -> void:
+	var alive := 0
+	for e in wh_enemies:
+		if e.state != "dead": alive += 1
+	if alive == 0 and stage == 1:
+		stage = 2
+		_flash_msg("النجم سيف الصقر جاي")
+		_spawn_boss()
+	else:
+		_set_status("خلّص الحرس اللي في المخزن: %d" % alive)
+
+func _on_boss_died(_e) -> void:
+	stage = 3
+	_flash_msg("خلصت الليلة! 🎉")
+	_set_status("النجم سيف الصقر اتقتل. مبروك.")
+
+func _on_player_died() -> void:
+	_set_status("اتقتلت. اضغط R لإعادة المحاولة")
+
+func _process(_delta: float) -> void:
+	if stage == 2 and is_instance_valid(boss) and boss.state != "dead":
+		_set_status("النجم سيف الصقر: %d%%" % int(max(0, boss.health / boss.max_health * 100)))
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_R:
+		if is_instance_valid(player) and player.health <= 0:
+			get_tree().reload_current_scene()
