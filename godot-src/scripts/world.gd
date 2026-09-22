@@ -159,7 +159,7 @@ func _spawn_yard_enemies() -> void:
 	for i in spots.size():
 		var en := Enemy.new()
 		en.enemy_name = names[i]
-		en.body_color = colors[i]
+		en.body_tint = colors[i]
 		en.position = spots[i]
 		add_child(en)
 		en.died.connect(_on_yard_enemy_died)
@@ -172,7 +172,7 @@ func _spawn_warehouse_enemies() -> void:
 	for i in spots.size():
 		var en := Enemy.new()
 		en.enemy_name = names[i]
-		en.body_color = colors[i]
+		en.body_tint = colors[i]
 		en.detect_radius = 12.0
 		en.position = spots[i]
 		add_child(en)
@@ -182,7 +182,7 @@ func _spawn_warehouse_enemies() -> void:
 func _spawn_boss() -> void:
 	boss = Enemy.new()
 	boss.enemy_name = "النجم سيف الصقر"
-	boss.body_color = Color(0.6, 0.15, 0.12)
+	boss.body_tint = Color(0.6, 0.15, 0.12)
 	boss.max_health = 220.0
 	boss.damage = 8.0
 	boss.speed = 2.8
@@ -311,6 +311,7 @@ func _on_player_died() -> void:
 func _process(_delta: float) -> void:
 	if stage == 2 and is_instance_valid(boss) and boss.state != "dead":
 		_set_status("النجم سيف الصقر: %d%%" % int(max(0, boss.health / boss.max_health * 100)))
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_R:

@@ -90,3 +90,7 @@
 
 ### تحسين الشكل البصري (shooter/src/postfx_lib.js)
 ظلال حقيقية من ضوء القمر (PCF soft shadows)، مواد PBR (roughness/metalness) بدل الإضاءة المسطحة، وخط معالجة صورة بعد الرندر: bloom حول الأضواء، FXAA، وتدرّج لوني سينمائي (دفء/برودة، فينيت، حبيبات فيلم خفيفة). الكود منسوخ من نسخة three.js r128 الرسمية (المكتبة المرخّصة MIT) بدل تحميله من رابط خارجي، عشان يفضل شغّال حتى لو الرابط اتغيّر.
+
+### شخصيات حقيقية (godot-prototype, godot-src/models)
+الشخصيات دلوقتي عبارة عن نموذج بشري حقيقي (Cesium Man) بمفاصل وحركة مشي، بدل الأشكال البدائية. النموذج مرخّص Creative Commons Attribution 4.0 من Cesium (عن طريق مستودع Khronos Group الرسمي لعينات glTF)، ومُلوّن بلون مختلف لكل شخصية.
+Credit: © 2017 Cesium — Creative Commons Attribution 4.0 International.

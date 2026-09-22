@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name Enemy
 
+const MODEL := preload("res://models/CesiumMan.glb")
+
 @export var enemy_name := "حارس"
 @export var max_health := 50.0
 @export var speed := 2.2
@@ -8,9 +10,8 @@ class_name Enemy
 @export var detect_radius := 10.0
 @export var attack_range := 9.0
 @export var damage := 4.0
-@export var body_color := Color(0.55, 0.18, 0.16)
+@export var body_tint := Color(1.0, 1.0, 1.0)
 @export var is_boss := false
-@export var drop_weapon := ""
 
 var health := max_health
 var state := "patrol"  # patrol, chase, attack, dead
@@ -19,71 +20,59 @@ var patrol_b: Vector3
 var patrol_target: Vector3
 var attack_cooldown := 0.0
 var player: Node3D = null
-var body_mat: StandardMaterial3D
 var GRAVITY := 10.5
 var sfx: AudioStreamPlayer3D
 var alerted_once := false
+
+var model_root: Node3D
+var anim: AnimationPlayer
+var anim_name := ""
+var mesh_inst: MeshInstance3D
+var moving_visual := false
+var model_scale := 1.0
 
 signal died(enemy)
 
 func _ready() -> void:
 	add_to_group("enemies")
-	var scale_mul := 1.4 if is_boss else 1.0
+	var scale_mul := 1.35 if is_boss else 1.0
 	var shape := CapsuleShape3D.new()
-	shape.radius = 0.35 * scale_mul
+	shape.radius = 0.3 * scale_mul
 	shape.height = 1.75 * scale_mul
 	var col := CollisionShape3D.new()
 	col.shape = shape
 	col.position.y = 0.9 * scale_mul
 	add_child(col)
 
-	body_mat = StandardMaterial3D.new()
-	body_mat.albedo_color = body_color
-	body_mat.roughness = 0.7
+	model_root = MODEL.instantiate()
+	add_child(model_root)
+	# CesiumMan is authored ~1.5m tall (local, pre Z-up-correction); scale it to our target height.
+	model_scale = 1.78 * scale_mul
+	model_root.scale = Vector3.ONE * model_scale
 
-	# torso
-	var torso := MeshInstance3D.new()
-	var cap := CapsuleMesh.new(); cap.radius = 0.28 * scale_mul; cap.height = 1.1 * scale_mul
-	torso.mesh = cap; torso.position.y = 1.0 * scale_mul
-	torso.material_override = body_mat
-	add_child(torso)
+	anim = _find_anim_player(model_root)
+	if anim:
+		var list := anim.get_animation_list()
+		if list.size() > 0:
+			anim_name = list[0]
+			anim.play(anim_name)
+			anim.pause()
 
-	# head
-	var head := MeshInstance3D.new()
-	var sph := SphereMesh.new(); sph.radius = 0.22 * scale_mul; sph.height = 0.44 * scale_mul
-	head.mesh = sph; head.position.y = 1.68 * scale_mul
-	var head_mat := StandardMaterial3D.new(); head_mat.albedo_color = Color(0.75, 0.55, 0.42)
-	head.material_override = head_mat
-	add_child(head)
-
-	# arms
-	for side in [-1, 1]:
-		var arm := MeshInstance3D.new()
-		var acap := CapsuleMesh.new(); acap.radius = 0.08 * scale_mul; acap.height = 0.75 * scale_mul
-		arm.mesh = acap
-		arm.position = Vector3(0.36 * scale_mul * side, 1.05 * scale_mul, 0.05)
-		arm.rotation.z = -0.15 * side
-		arm.material_override = body_mat
-		add_child(arm)
-
-	# legs
-	for side in [-1, 1]:
-		var leg := MeshInstance3D.new()
-		var lcap := CapsuleMesh.new(); lcap.radius = 0.1 * scale_mul; lcap.height = 0.85 * scale_mul
-		leg.mesh = lcap
-		leg.position = Vector3(0.14 * scale_mul * side, 0.42 * scale_mul, 0)
-		var leg_mat := StandardMaterial3D.new(); leg_mat.albedo_color = Color(0.12, 0.12, 0.14)
-		leg.material_override = leg_mat
-		add_child(leg)
-
-	# held weapon (visual only)
-	var gun := MeshInstance3D.new()
-	var gbox := BoxMesh.new(); gbox.size = Vector3(0.06, 0.08, (0.5 if is_boss else 0.35))
-	gun.mesh = gbox
-	gun.position = Vector3(0.4 * scale_mul, 1.05 * scale_mul, -0.15)
-	var gun_mat := StandardMaterial3D.new(); gun_mat.albedo_color = Color(0.05, 0.05, 0.06)
-	gun.material_override = gun_mat
-	add_child(gun)
+	mesh_inst = _find_mesh(model_root)
+	if mesh_inst:
+		for i in mesh_inst.get_surface_override_material_count() if mesh_inst.mesh else 0:
+			pass
+		if mesh_inst.mesh:
+			for si in mesh_inst.mesh.get_surface_count():
+				var base_mat := mesh_inst.mesh.surface_get_material(si)
+				var mat: StandardMaterial3D
+				if base_mat is StandardMaterial3D:
+					mat = base_mat.duplicate()
+				else:
+					mat = StandardMaterial3D.new()
+				mat.albedo_color = body_tint
+				mat.roughness = 0.8
+				mesh_inst.set_surface_override_material(si, mat)
 
 	var label := Label3D.new()
 	label.text = enemy_name
@@ -105,6 +94,24 @@ func _ready() -> void:
 	if players.size() > 0:
 		player = players[0]
 
+func _find_anim_player(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n
+	for c in n.get_children():
+		var r := _find_anim_player(c)
+		if r:
+			return r
+	return null
+
+func _find_mesh(n: Node) -> MeshInstance3D:
+	if n is MeshInstance3D:
+		return n
+	for c in n.get_children():
+		var r := _find_mesh(c)
+		if r:
+			return r
+	return null
+
 func _play(sound_name: String, vol: float = 1.0) -> void:
 	var stream: AudioStream = load("res://sfx/%s.wav" % sound_name)
 	if stream:
@@ -117,12 +124,16 @@ func take_damage(amount: float, _hit_pos: Vector3 = Vector3.ZERO, headshot: bool
 		return
 	health -= amount
 	_play("headshot" if headshot else "hit", 0.7)
-	var flash_col := body_mat.albedo_color
-	body_mat.albedo_color = Color(1, 1, 1)
-	get_tree().create_timer(0.08).timeout.connect(func():
-		if is_instance_valid(self) and body_mat:
-			body_mat.albedo_color = flash_col
-	)
+	if mesh_inst:
+		for si in mesh_inst.get_surface_override_material_count():
+			var m := mesh_inst.get_surface_override_material(si)
+			if m is StandardMaterial3D:
+				var orig: Color = m.albedo_color
+				m.albedo_color = Color(1, 1, 1)
+				get_tree().create_timer(0.08).timeout.connect(func():
+					if is_instance_valid(self) and m:
+						m.albedo_color = orig
+				)
 	if health <= 0:
 		_die()
 	elif state == "patrol":
@@ -160,6 +171,7 @@ func _physics_process(delta: float) -> void:
 		to_player = player.global_position - global_position
 		dist = to_player.length()
 
+	moving_visual = false
 	if state == "patrol":
 		if dist < detect_radius:
 			state = "chase"
@@ -173,6 +185,7 @@ func _physics_process(delta: float) -> void:
 				var dir := to_target.normalized()
 				velocity.x = dir.x * speed
 				velocity.z = dir.z * speed
+				moving_visual = true
 	elif state == "chase":
 		if dist > detect_radius * 1.8:
 			state = "patrol"
@@ -186,6 +199,7 @@ func _physics_process(delta: float) -> void:
 			_face(to_player)
 			velocity.x = dir.x * chase_speed
 			velocity.z = dir.z * chase_speed
+			moving_visual = true
 	elif state == "attack":
 		velocity.x = 0
 		velocity.z = 0
@@ -199,6 +213,16 @@ func _physics_process(delta: float) -> void:
 				attack_cooldown = 1.5
 
 	move_and_slide()
+
+	if anim and anim_name != "":
+		if moving_visual:
+			if anim.is_playing() == false or anim.current_animation != anim_name:
+				anim.play(anim_name)
+			anim.speed_scale = 1.0
+		else:
+			anim.speed_scale = 0.0
+			if not anim.is_playing():
+				anim.play(anim_name)
 
 func _face(dir: Vector3) -> void:
 	dir.y = 0
