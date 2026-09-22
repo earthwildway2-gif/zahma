@@ -50,12 +50,12 @@ function fire() {
     if (P.aimAssist) { let bestA = 0.07, tgt = null; for (const e of enemies) { if (e.dead) continue; const c = new V3(e.x, 1.25, e.z), dir = c.clone().sub(v0), dist = dir.length(); dir.normalize(); const ang2 = Math.acos(clamp(dir.dot(fwd), -1, 1)); if (ang2 < bestA && dist < 60 && rayBoxes(v0.x, v0.y, v0.z, dir.x, dir.y, dir.z, dist) === Infinity) { bestA = ang2; tgt = dir; } } if (tgt) d.lerp(tgt, 0.55); }
     d.normalize(); const res = traceShot(v0, d, w.range), hp = v0.clone().addScaledVector(d, res.t);
     spawnTracer(from, hp, w.kind === 'shotgun' ? 0xffc890 : 0xffe6b0, w.kind === 'shotgun' ? 0.7 : 1);
-    if (res.type === 'enemy') { const dmg = w.dmg * (res.head ? 2.6 : 1) * (w.kind === 'shotgun' ? Math.max(0.35, 1 - res.t / 30) : 1); const killed = res.enemy.damage(dmg, d, res.head, false); hitMarker(res.head, killed); sparks(hp, 5, d.clone().negate(), 2.5, 0.6, [0.9, 0.2, 0.15]); puff(hp, 0.3, 0.5, new V3(0, 0.3, 0), 0.25, 2, 0x7a1e1e); }
+    if (res.type === 'enemy') { const dmg = w.dmg * (res.head ? (RUN.headMul || 2.6) : 1) * (w.kind === 'shotgun' ? Math.max(0.35, 1 - res.t / 30) : 1); const killed = res.enemy.damage(dmg, d, res.head, false); hitMarker(res.head, killed); sparks(hp, 5, d.clone().negate(), 2.5, 0.6, [0.9, 0.2, 0.15]); puff(hp, 0.3, 0.5, new V3(0, 0.3, 0), 0.25, 2, 0x7a1e1e); }
     else if (res.type === 'barrel') { detonate(res.barrel); hitMarker(false, false); }
     else if (res.type === 'lamp') { breakLamp(res.lamp); }
     else if (res.type === 'solid') surfaceFx(hp, new V3(res.nx, res.ny, res.nz), res.solid.metal);
   }
-  sfxShot(w.kind, 1, 0, 0); emitNoise(P.x, P.z, { pistol: 26, rifle: 38, shotgun: 46 }[w.kind] || 34, 'shot');
+  sfxShot(w.kind, 1, 0, 0); emitNoise(P.x, P.z, ({ pistol: 26, rifle: 38, shotgun: 46 }[w.kind] || 34) * RUN.quiet, 'shot');
   P.kick = Math.min(1, P.kick + w.recoil * 9); P.pitch += w.recoil * rand(0.8, 1.3); P.yaw += rand(-0.5, 0.5) * w.recoil * 0.6; FX.shake = Math.max(FX.shake, w.kind === 'shotgun' ? 0.55 : 0.16);
   mflash.material.opacity = 1; mflash2.material.opacity = 0.75; const mz = VMS[P.weapon].userData.muzzle.position; mflash.position.copy(mz).add(vm.position).add(new V3(0, 0, -0.02)); mflash2.position.copy(mflash.position);
   mflash.material.rotation = rand(0, TAU); muzzleLight.position.copy(from); muzzleLight.intensity = 6;

@@ -79,6 +79,7 @@ class Enemy {
   mood() { if (this.state === 'combat') return { strafe: 'بيتحرك ويضرب', cover: 'محتمي ورا سترة', flank: 'بيلفّ عليك', push: 'بيهجم' }[this.role] || 'بيقاتل'; if (this.act && this.state === 'patrol') return ({ sing: 'بيغنّي', stretch: 'بيسخّن', selfie: 'بيصوّر سيلفي', phone: 'في التليفون', notes: 'بيراجع ورقه', smoke: 'بيدخّن' })[this.act] || 'هادي'; return MOOD[this.state] || 'هادي'; }
   hear(x, z, kind, near) {
     if (this.state === 'combat' || this.state === 'flee' || this.state === 'surrender') { if (kind === 'shot') this.lastKnown = [P.x, P.z]; return; }
+    if (kind === 'lure') { this.inv = [x, z]; this.invT = 9; this.aware = Math.max(this.aware, 0.55); if (this.state === 'patrol') this.state = 'suspicious'; return; }
     if (kind === 'boom') { this.morale -= 18; this.inv = [x, z]; this.invT = 6; if (this.state === 'patrol') { this.state = 'suspicious'; this.aware = 0.6; } return; }
     if (kind === 'shot') { this.state = 'alert'; this.alertT = 0.3 + Math.random() * 0.5; this.lastKnown = [P.x, P.z]; bark('alert', this); return; }
     this.aware = Math.min(0.95, this.aware + 0.35 * (1.2 - near)); this.inv = [x, z]; this.invT = 5; if (this.state === 'patrol' && this.aware > 0.3) this.state = 'suspicious';
@@ -92,11 +93,11 @@ class Enemy {
     if (this.type === 'boss' && !this.phase2 && this.hp < this.maxhp * 0.5) { this.phase2 = true; this.c = Object.assign({}, this.c, { speed: 3.3, rate: 0.09 }); if (storyHook.bossPhase) storyHook.bossPhase(this); }
     return false;
   }
-  die(dir, head) {
+  die(dir, head, silent) {
     this.dead = true; this.state = 'dead'; this.fall = 0; this.fdir = dir.clone ? dir.clone() : new V3(0, 0, 1); this.setIcon(''); sfxTick(140, 0.3, 0.2);
-    kills++; fallen.push({ name: this.name, title: this.title, head }); addFeed((head ? 'ضربة راس: ' : 'وقّعت ') + this.name, head);
-    if (this.persona && Math.random() < 0.7) { const l = this.persona.pain; speak(l.who, l.text, clamp(1 - Math.hypot(this.x - P.x, this.z - P.z) / 40, 0.2, 0.8), { rate: this.vrate }); }
-    moraleShock(this.x, this.z, 16, 14); if (this.type === 'heavy') moraleShock(this.x, this.z, 40, 10);
+    kills++; if (head) RUN.headshots++; fallen.push({ name: this.name, title: this.title, head }); addFeed((silent ? 'خنقت بصمت: ' : head ? 'ضربة راس: ' : 'وقّعت ') + this.name, head);
+    if (!silent && this.persona && Math.random() < 0.7) { const l = this.persona.pain; speak(l.who, l.text, clamp(1 - Math.hypot(this.x - P.x, this.z - P.z) / 40, 0.2, 0.8), { rate: this.vrate }); }
+    if (!silent) { moraleShock(this.x, this.z, 16, 14); if (this.type === 'heavy') moraleShock(this.x, this.z, 40, 10); }
     if (killHook) killHook(this);
     if (Math.random() < 0.4 && this.type !== 'boss') addItem(Math.random() < 0.5 ? 'ammo' : 'health', this.x, this.z);
     if (this.type === 'boss') { FX.slowT = 1.8; }
@@ -107,13 +108,13 @@ class Enemy {
   faceTo(x, z, dt, k = 8) { const t = Math.atan2(-(x - this.x), -(z - this.z)); let d = t - this.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); this.yaw += d * Math.min(1, dt * k); }
   shoot() {
     const dx = P.x - this.x, dz = P.z - this.z, dist = Math.hypot(dx, dz), s = this.c.scale; const from = new V3(this.x - Math.sin(this.yaw) * 0.6, 1.22 * s * (1 - this.crouch * 0.25), this.z - Math.cos(this.yaw) * 0.6);
-    const err = 0.02 + dist * 0.0022 + (this.type === 'boss' ? -0.01 : 0) + (this.hiding ? 0.02 : 0), off = Math.sqrt(Math.random()) * err * dist;
+    const err = (0.02 + dist * 0.0022 + (this.type === 'boss' ? -0.01 : 0) + (this.hiding ? 0.02 : 0)) / DF().acc, off = Math.sqrt(Math.random()) * err * dist;
     const a = rand(0, TAU), tgt = new V3(P.x + Math.cos(a) * off, 1.3 + Math.sin(a) * off * 0.7, P.z + Math.sin(a) * off);
     const hitP = off < 0.42 * (Math.hypot(P.vx, P.vz) > 3 ? 0.75 : 1); this.mag--;
     spawnTracer(from, hitP ? new V3(P.x, 1.3, P.z) : tgt, this.type === 'heavy' ? 0xffb070 : 0xff8a5a, 0.9); this.flashT = 0.05;
     const pan = clamp(Math.sin(Math.atan2(this.x - P.x, this.z - P.z) - P.yaw + Math.PI) * 0.8, -0.9, 0.9);
     sfxShot(this.type === 'heavy' ? 'shotgun' : 'enemy', clamp(1.1 - dist / 55, 0.2, 0.9), pan, dist > 25 ? 2600 : 0);
-    if (hitP) hurtPlayer(this.c.dmg * (this.type === 'heavy' ? 1 : rand(0.8, 1.2)), from);
+    if (hitP) hurtPlayer(this.c.dmg * DF().dmg * (this.type === 'heavy' ? 1 : rand(0.8, 1.2)), from);
     else { if (off < 2.2) sfxWhiz(clamp(Math.sin(Math.atan2(this.x - P.x, this.z - P.z) - P.yaw + Math.PI), -0.9, 0.9)); const bd = tgt.clone().sub(from).normalize(), r = rayBoxes(from.x, from.y, from.z, bd.x, bd.y, bd.z, 60); if (r !== Infinity && r < dist + 3) { const p = from.clone().addScaledVector(bd, r); sparks(p, 3, bd.clone().negate(), 2, 0.6); } if (dist < 4) sfxTick(rand(2400, 3400), 0.1, 0.12); }
   }
   findCover() {
@@ -141,9 +142,9 @@ class Enemy {
 
     if (this.state === 'patrol' || this.state === 'suspicious') {
       // vision fills an awareness meter (closer, faster or louder player = faster)
-      if (sees && dist < 34) { const rate = (dist < 8 ? 3.4 : dist < 18 ? 1.5 : 0.65) * (Math.hypot(P.vx, P.vz) > 5 ? 1.5 : 1); this.aware += rate * dt; if (this.aware > 0.3 && this.state === 'patrol') { this.state = 'suspicious'; this.inv = [P.x, P.z]; this.invT = 6; } }
+      if (sees && dist < 34) { const rate = (dist < 8 ? 3.4 : dist < 18 ? 1.5 : 0.65) * (Math.hypot(P.vx, P.vz) > 5 ? 1.5 : 1) * DF().aware * RUN.quiet; this.aware += rate * dt; if (this.aware > 0.3 && this.state === 'patrol') { this.state = 'suspicious'; this.inv = [P.x, P.z]; this.invT = 6; } }
       else this.aware = Math.max(0, this.aware - 0.3 * dt);
-      if (this.aware >= 1) { this.state = 'alert'; this.alertT = 0.3 + Math.random() * 0.3; this.lastKnown = [P.x, P.z]; bark('alert', this); alertEnemies(this.x, this.z, 20); }
+      if (this.aware >= 1) { this.state = 'alert'; this.alertT = 0.3 + Math.random() * 0.3; this.lastKnown = [P.x, P.z]; bark('alert', this); alertEnemies(this.x, this.z, 20); raiseAlarm(this); }
       else if (this.state === 'suspicious') {
         this.setIcon('❓'); this.invT -= dt;
         if (this.inv) { const wx = this.inv[0] - this.x, wz = this.inv[1] - this.z; if (Math.hypot(wx, wz) > 1.6) { this.faceTo(this.inv[0], this.inv[1], dt, 6); this.move(wx, wz, 1.9, dt); moving = true; sp = 1.9; } else { this.yaw += Math.sin(t * 2.4) * dt * 1.6; } }

@@ -3,8 +3,8 @@
 let state = 'title', gameT = 0; const stat = { shots: 0 };
 const feedEl = $('#feed');
 function addFeed(text, gold) { const d = document.createElement('div'); d.textContent = text; if (gold) d.style.color = '#ffb84a'; feedEl.appendChild(d); while (feedEl.children.length > 4) feedEl.removeChild(feedEl.firstChild); setTimeout(() => { d.style.opacity = 0; setTimeout(() => d.remove(), 600); }, 2600); }
-function hudAmmo() { const a = P.ammo[P.weapon]; $('#am').textContent = a.mag; $('#ar').textContent = '/ ' + a.res; $('#wn').textContent = W[P.weapon].name; }
-function hudHp() { $('#hp .bar i').style.width = Math.max(0, P.hp) + '%'; }
+function hudAmmo() { if (typeof P.gren === 'number') hudGear(); const a = P.ammo[P.weapon]; $('#am').textContent = a.mag; $('#ar').textContent = '/ ' + a.res; $('#wn').textContent = W[P.weapon].name; }
+function hudHp() { $('#hp .bar i').style.width = Math.max(0, P.hp / (P.maxhp || 100) * 100) + '%'; }
 let msgT = 0; function msg(t, ms = 2200) { const m = $('#msg'); m.textContent = t; m.classList.add('on'); clearTimeout(msgT); msgT = setTimeout(() => m.classList.remove('on'), ms); }
 function setObj(t) { $('#obj').textContent = t; }
 /* voice lines: durations are measured from the clips when available */
@@ -85,38 +85,40 @@ function resetWorld() {
   addItem('rifle', 5, 24); addItem('health', -6, 29); addItem('health', 0, -18); addItem('shotgun', -3, -17.5); addItem('health', -16, -36); addItem('ammo', 20, 12); addItem('ammo', -20, 16); addItem('ammo', 12, -30); addItem('health', 26, -30);
   rollDoor.solid = true; rollDoor.mesh.visible = true; rollDoor.mesh.position.y = 1.8; officeDoor.solid = true; officeDoor.mesh.visible = true; officeDoor.mesh.position.y = 1.5;
   gate.solid = false; gate.mesh.visible = false; decals.forEach(d => d.visible = false); shehata.visible = true;
-  Object.assign(P, { x: 0, z: 32, vx: 0, vz: 0, yaw: 0, pitch: 0, hp: 100, dead: false, weapon: 0, unlocked: [true, false, false], reloadT: 0, fireT: 0, kick: 0, swap: 0, frozen: false });
+  Object.assign(P, { x: 0, z: 32, vx: 0, vz: 0, yaw: 0, pitch: 0, hp: P.maxhp || 100, gren: 2, bottles: 3, dead: false, weapon: 0, unlocked: [true, false, false], reloadT: 0, fireT: 0, kick: 0, swap: 0, frozen: false });
   P.ammo = [{ mag: 12, res: 48 }, { mag: 0, res: 0 }, { mag: 0, res: 0 }]; showWeapon(); hudAmmo(); hudHp();
   kills = 0; stat.shots = 0; gameT = 0; S.stage = 0; S.bossDead = false; S.fathy = null; S.live = false; S.mercy = 0; FX.slowT = 0; FX.dmgT = 0; spawnEnemies();
   resetInter();
 }
-function playerDie() { P.dead = true; state = 'over'; document.exitPointerLock && document.exitPointerLock(); $('#endT').textContent = 'اتقتلت'; $('#endT').style.color = '#ff5a5a'; $('#endP').textContent = 'الحرس لحقوك. حاول تاني بحذر أكتر.'; $('#stats').innerHTML = 'عدد اللي خلّصتهم: ' + kills; $('#again').textContent = 'حاول تاني'; $('#end').classList.remove('hidden'); $('#hud').classList.add('hidden'); }
+function playerDie() { P.dead = true; state = 'over'; document.exitPointerLock && document.exitPointerLock(); $('#endT').textContent = 'اتقتلت'; $('#endT').style.color = '#ff5a5a'; $('#endP').textContent = 'الحرس لحقوك. حاول تاني بحذر أكتر.'; $('#stats').innerHTML = 'عدد اللي خلّصتهم: ' + kills; $('#again').textContent = CP ? 'كمّل من آخر نقطة حفظ' : 'حاول تاني'; $('#end').classList.remove('hidden'); $('#hud').classList.add('hidden'); }
 function winGame() {
   state = 'over'; document.exitPointerLock && document.exitPointerLock(); const full = evidence >= 3;
   $('#endT').textContent = S.live ? (full ? 'ليلة النجوم: الحقيقة اتذاعت' : 'البث انتشر... بس الشك فضل') : 'الأدلة وصلت للنيابة'; $('#endT').style.color = '#5fe0a0';
   const a = S.live ? (full ? 'ستين مليون متفرج شافوا النجوم وهما بيتقبض عليهم، والحاج صلاح اتحاصر. شحتة في أمان، وسيد بقى بطل حقيقي.' : 'البث انتشر، بس الأدلة الناقصة خلّت ناس كتير تشكّك. الحاج صلاح لسه بيحاول يهرب.') : 'الأدلة وصلت للنيابة بهدوء. الحاج صلاح هرب في الزحمة... والفصل الجاي هيطارده.';
   const f = S.fathy === 'trust' ? ' وفتحي رجع لورشته وبقى في ضهرك.' : (S.fathy === 'cut' ? ' وفتحي اختفى من حياتك.' : '');
   $('#endP').textContent = a + f + (S.spared || S.mercy ? ' ورحمتك مع اللي استسلموا اتحكت في البلد.' : '');
-  const names = fallen.map(x => x.name); $('#stats').innerHTML = 'النجوم اللي وقعوا: ' + kills + (names.length ? ' (' + names.slice(0, 6).join('، ') + (names.length > 6 ? '...' : '') + ')' : '') + '<br>الأدلة: ' + evidence + '/3<br>الوقت: ' + Math.floor(gameT / 60) + ':' + String(Math.floor(gameT % 60)).padStart(2, '0') + '<br>صحتك: ' + Math.round(P.hp) + '%';
+  const names = fallen.map(x => x.name); $('#stats').innerHTML = 'النجوم اللي وقعوا: ' + kills + (names.length ? ' (' + names.slice(0, 6).join('، ') + (names.length > 6 ? '...' : '') + ')' : '') + '<br>الأدلة: ' + evidence + '/3<br>التصنيف: <b style="color:#ffb84a;font-size:22px">' + rankOf().r + '</b> (' + rankOf().score + ' نقطة)<br>خنق صامت: ' + RUN.stealthKills + ' | إنذارات: ' + RUN.alarms + ' | ضربات راس: ' + RUN.headshots + '<br>الوقت: ' + Math.floor(gameT / 60) + ':' + String(Math.floor(gameT % 60)).padStart(2, '0') + '<br>صحتك: ' + Math.round(P.hp) + '%';
   $('#again').textContent = 'العب تاني'; $('#end').classList.remove('hidden'); $('#hud').classList.add('hidden');
 }
 function sfxSiren(dur = 6) { if (!AU.ac) return; const ac = AU.ac, t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.type = 'sawtooth'; const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; o.connect(f); f.connect(g); g.connect(AU.master); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06, t + 1); g.gain.linearRampToValueAtTime(0, t + dur);
   for (let i = 0; i < dur * 2; i++) o.frequency.setValueAtTime(i % 2 ? 620 : 860, t + i * 0.5); o.start(t); o.stop(t + dur); }
 killHook = (e) => { if (e.type === 'boss') { S.bossDead = true; setTimeout(() => { S.stage = 6; startLayla(); play(L.end.concat(S.spared || S.mercy ? L.endSpare : [], evidence >= 3 ? L.endEvid : []), () => { play(L.layla, () => { openChoice('الكاميرات شغّالة... تعمل إيه؟', ['اذيع لايف على الهواء', () => { S.live = true; play(L.liveYes, () => { sfxSiren(6); setTimeout(winGame, 2600); }); }], ['سلّم الأدلة للنيابة بس', () => { S.live = false; play(L.liveNo, () => { sfxSiren(6); setTimeout(winGame, 2600); }); }]); }); }); }, 2200); } };
 storyHook.bossPhase = (boss) => { play(L.phase2); const E2 = (x, z, pid) => { const e = new Enemy('guard', x, z, null, { persona: PBY[pid] }); e.zone = 'boss'; e.state = 'combat'; e.role = 'push'; e.lastKnown = [P.x, P.z]; }; E2(-6, -24, 'b3'); E2(6, -24, 'b4'); msg('الصقر بيطلب دعم!'); };
+function spawnBossGroup() { const mk = (t, x, z, pid) => { const e = new Enemy(t, x, z, null, { persona: PBY[pid] }); e.zone = 'boss'; e.state = 'alert'; e.alertT = 3.5 + Math.random(); e.lastKnown = [P.x, P.z]; return e; }; mk('boss', 0, -37, 'boss'); mk('guard', -3, -35, 'b1'); mk('guard', 3, -35, 'b2'); }
 function storyUpdate() {
   const aliveZone = z => aliveCount(e => e.zone === z);
   if (S.stage === 0) { if (P.unlocked[1]) { S.stage = 1; play(L.rifle, () => play(L.laylaHello)); } }
-  if (S.stage <= 1 && P.z < 26) { S.stage = 2; gate.solid = true; gate.mesh.visible = true; gate.mesh.position.y = 1.5; sfxMetal('gate'); msg('البوابة اتقفلت!'); play(L.gate); enemies.forEach(e => { if (e.zone === 'yard' && !e.dead) { e.state = 'alert'; e.alertT = 0.5 + Math.random() * 1.6; e.lastKnown = [P.x, P.z]; } }); }
-  if (S.stage === 2) { setObj('وقّع نجوم الحوش: ' + aliveZone('yard')); if (aliveZone('yard') === 0) { S.stage = 3; rollDoor.solid = false; rollDoor.mesh.visible = false; sfxMetal('door'); msg('الباب اتفتح'); setObj('ادخل المخزن'); spawnSurrender();
-      play(L.yardDone, () => play(L.fathyCall, () => openChoice('الأسطى فتحي بيكلّمك... تعمل إيه؟', ['سامحه وخليه يساعدك', () => { S.fathy = 'trust'; play(L.fathyTrust); }], ['اقفل الخط', () => { S.fathy = 'cut'; play(L.fathyCut); }]))); } }
+  if (S.stage <= 1 && P.z < 26) { S.stage = 2; gate.solid = true; gate.mesh.visible = true; gate.mesh.position.y = 1.5; sfxMetal('gate'); msg('البوابة اتقفلت!'); play(L.gate); enemies.forEach(e => { if (e.zone === 'yard' && !e.dead && e.state !== 'combat') { e.state = 'suspicious'; e.aware = 0.7; e.inv = [P.x, P.z]; e.invT = 10; } }); }
+  if (S.stage === 2) { setObj('وقّع نجوم الحوش: ' + aliveZone('yard') + '  (اخنق بصمت أو اقتحم)'); if (aliveZone('yard') === 0) { S.stage = 3; rollDoor.solid = false; rollDoor.mesh.visible = false; sfxMetal('door'); msg('الباب اتفتح'); setObj('ادخل المخزن'); spawnSurrender(); chapter('الفصل الثاني', 'المخزن... النجوم مستنّيينك');
+      offerPerks(() => { saveCheckpoint(); play(L.yardDone, () => play(L.fathyCall, () => openChoice('الأسطى فتحي بيكلّمك... تعمل إيه؟', ['سامحه وخليه يساعدك', () => { S.fathy = 'trust'; play(L.fathyTrust); }], ['اقفل الخط', () => { S.fathy = 'cut'; play(L.fathyCut); }]))); }); } }
   if (S.stage === 3 && P.z < -15) { S.stage = 4; play(L.enter); enemies.forEach(e => { if (e.zone === 'wh' && !e.dead && e.state === 'patrol' && Math.random() < 0.5) { e.state = 'suspicious'; e.aware = 0.6; e.inv = [P.x, P.z]; e.invT = 6; } }); }
-  if (S.stage === 4) { setObj('وقّع نجوم المخزن: ' + aliveZone('wh') + ' | أدلة: ' + evidence + '/3'); if (aliveZone('wh') === 0) { S.stage = 5; officeDoor.solid = false; officeDoor.mesh.visible = false; sfxMetal('door'); const mk = (t, x, z, pid) => { const e = new Enemy(t, x, z, null, { persona: PBY[pid] }); e.zone = 'boss'; e.state = 'alert'; e.alertT = 3.5 + Math.random(); e.lastKnown = [P.x, P.z]; return e; }; mk('boss', 0, -37, 'boss'); mk('guard', -3, -35, 'b1'); mk('guard', 3, -35, 'b2'); play(L.whDone); setObj('اقتل النجم سيف الصقر وخد شحتة'); } }
+  if (S.stage === 4) { setObj('وقّع نجوم المخزن: ' + aliveZone('wh') + ' | أدلة: ' + evidence + '/3'); if (aliveZone('wh') === 0) { S.stage = 5; officeDoor.solid = false; officeDoor.mesh.visible = false; sfxMetal('door'); chapter('الفصل الثالث', 'النجم سيف الصقر');
+      offerPerks(() => { saveCheckpoint(); spawnBossGroup(); play(L.whDone); setObj('اقتل النجم سيف الصقر وخد شحتة'); }); } }
   if (S.stage === 5) { const boss = enemies.find(e => e.type === 'boss'); if (boss && !boss.dead) setObj('النجم سيف الصقر: ' + Math.max(0, Math.round(boss.hp / boss.maxhp * 100)) + '%'); }
 }
 function itemsUpdate(dt) {
   for (const it of items) { if (it.taken) continue; it.mesh.rotation.y += dt * 1.5; it.mesh.position.y = 0.75 + Math.sin(performance.now() * 0.003 + it.x) * 0.08; if (Math.hypot(it.x - P.x, it.z - P.z) > 1.3) continue;
-    if (it.type === 'health') { if (P.hp >= 100) continue; P.hp = Math.min(100, P.hp + 40); hudHp(); msg('+ صحة', 900); }
+    if (it.type === 'health') { if (P.hp >= P.maxhp) continue; P.hp = Math.min(P.maxhp, P.hp + 40); hudHp(); msg('+ صحة', 900); }
     else if (it.type === 'ammo') { for (let i = 0; i < 3; i++) if (P.unlocked[i]) P.ammo[i].res += [24, 45, 8][i]; msg('+ ذخيرة', 900); }
     else if (it.type === 'rifle') { P.unlocked[1] = true; P.ammo[1].mag = 30; P.ammo[1].res = 90; switchWeapon(1); msg('كلاشن!', 1200); }
     else if (it.type === 'shotgun') { P.unlocked[2] = true; P.ammo[2].mag = 6; P.ammo[2].res = 18; switchWeapon(2); msg('شوتجن!', 1200); }
@@ -173,7 +175,7 @@ mmBuild();
 /* ================= input ================= */
 const cap = (el, id) => { try { el.setPointerCapture(id); } catch (e) {} };
 const keys = {}; const inp = { lookX: 0, lookY: 0, mx: 0, my: 0, fire: false, touch: false };
-addEventListener('keydown', e => { keys[e.code] = true; if (state !== 'play') return; if (e.code === 'KeyE') useInter(); if (e.code === 'KeyR') startReload(); if (e.code === 'Digit1') switchWeapon(0); if (e.code === 'Digit2') switchWeapon(1); if (e.code === 'Digit3') switchWeapon(2); if (e.code === 'KeyQ') cycleWeapon(); });
+addEventListener('keydown', e => { keys[e.code] = true; if (state !== 'play') return; if (e.code === 'KeyE') useInter(); if (e.code === 'KeyG') throwItem('gren'); if (e.code === 'KeyB') throwItem('bottle'); if (e.code === 'KeyR') startReload(); if (e.code === 'Digit1') switchWeapon(0); if (e.code === 'Digit2') switchWeapon(1); if (e.code === 'Digit3') switchWeapon(2); if (e.code === 'KeyQ') cycleWeapon(); });
 addEventListener('keyup', e => { keys[e.code] = false; });
 canvas.addEventListener('mousedown', e => { if (state !== 'play' || inp.touch) return; if (document.pointerLockElement !== canvas) { canvas.requestPointerLock && canvas.requestPointerLock(); } else inp.fire = true; });
 addEventListener('mouseup', () => { if (!inp.touch) inp.fire = false; });
@@ -191,7 +193,7 @@ addEventListener('touchstart', enableTouch, { passive: true }); addEventListener
   lk.addEventListener('pointermove', e => { if (e.pointerId !== lid) return; inp.lookX += (e.clientX - lx) * 0.0058; inp.lookY += (e.clientY - ly) * 0.0058; lx = e.clientX; ly = e.clientY; });
   const up = e => { if (e.pointerId === lid) lid = null; }; lk.addEventListener('pointerup', up); lk.addEventListener('pointercancel', up); }
 function bindHold(id, on, off) { const el = $(id); el.addEventListener('pointerdown', e => { e.preventDefault(); cap(el, e.pointerId); el.classList.add('on'); on(); }); const up = e => { el.classList.remove('on'); if (off) off(); }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); }
-bindHold('#bF', () => { inp.fire = true; }, () => { inp.fire = false; }); bindHold('#bR', startReload); bindHold('#bE', useInter); bindHold('#bW', cycleWeapon); bindHold('#bS', () => { P.sprint = !P.sprint; });
+bindHold('#bF', () => { inp.fire = true; }, () => { inp.fire = false; }); bindHold('#bR', startReload); bindHold('#bE', useInter); bindHold('#bGr', () => throwItem('gren')); bindHold('#bBt', () => throwItem('bottle')); bindHold('#bW', cycleWeapon); bindHold('#bS', () => { P.sprint = !P.sprint; });
 
 
 /* ================= interactions: evidence photos, a surrendering guard with a choice ================= */
@@ -211,7 +213,7 @@ function surrTalk(it) {
   it.done = true; const e = it.e;
   openChoice(e.name + ' رفع إيديه ومتوسّل. تعمل إيه؟',
     ['خد سلاحه (ذخيرة)', () => { P.ammo.forEach((a, i) => { if (P.unlocked[i]) a.res += [10, 24, 5][i]; }); hudAmmo(); msg('+ ذخيرة', 1200); releaseGuard(it); }],
-    ['سيبه يهرب', () => { S.mercy = (S.mercy || 0) + 1; P.hp = Math.min(100, P.hp + 15); hudHp(); msg('رحمتك... ' + e.name + ' جري', 1600); releaseGuard(it); }]);
+    ['سيبه يهرب', () => { S.mercy = (S.mercy || 0) + 1; P.hp = Math.min(P.maxhp, P.hp + 15); hudHp(); msg('رحمتك... ' + e.name + ' جري', 1600); releaseGuard(it); }]);
 }
 function openChoice(title, a, b) {
   state = 'choice'; document.exitPointerLock && document.exitPointerLock(); inp.fire = false; inp.mx = inp.my = 0; $('#chT').textContent = title; $('#ch1').textContent = a[0]; $('#ch2').textContent = b[0]; $('#choice').classList.remove('hidden');
@@ -222,15 +224,16 @@ function guardTalk(it) {
   it.done = true;
   openChoice('الحارس رافع إيديه ومتوسّل. تعمل إيه؟',
     ['اسأله عن الصقر', () => { play(L.gAsk, () => { P.ammo.forEach((a, i) => { if (P.unlocked[i]) a.res += [12, 30, 6][i]; }); hudAmmo(); msg('+ ذخيرة من الحارس', 1400); releaseGuard(it); }); }],
-    ['سيبه يهرب', () => { S.spared = true; play(L.gSpare, () => { P.hp = Math.min(100, P.hp + 25); hudHp(); msg('+ صحة', 1200); releaseGuard(it); }); }]);
+    ['سيبه يهرب', () => { S.spared = true; play(L.gSpare, () => { P.hp = Math.min(P.maxhp, P.hp + 25); hudHp(); msg('+ صحة', 1200); releaseGuard(it); }); }]);
 }
 function interUpdate() {
   nearI = null; let best = 1e9;
   for (const it of inter) { if (it.e && it.e.dead) it.done = true; if (it.done) continue; const d = Math.hypot(it.x - P.x, it.z - P.z); if (d < it.r && d < best) { best = d; nearI = it; } }
+  const tk = takedownTarget(); if (tk) nearI = { kind: 'takedown', e: tk, label: 'اخنقه بصمت: ' + tk.name };
   const pr = $('#prompt'), be = $('#bE');
   if (nearI && state === 'play') { pr.textContent = (inp.touch ? 'اضغط "تفاعل": ' : 'اضغط E: ') + nearI.label; pr.classList.remove('hidden'); if (inp.touch) be.style.display = 'flex'; } else { pr.classList.add('hidden'); be.style.display = 'none'; }
 }
-function useInter() { if (!nearI || state !== 'play') return; const it = nearI; if (it.kind === 'evidence') photograph(it); else if (it.kind === 'guard') guardTalk(it); else if (it.kind === 'surr') surrTalk(it); }
+function useInter() { if (!nearI || state !== 'play') return; const it = nearI; if (it.kind === 'evidence') photograph(it); else if (it.kind === 'guard') guardTalk(it); else if (it.kind === 'surr') surrTalk(it); else if (it.kind === 'takedown') silentTakedown(it.e); }
 
 /* ================= per-frame ================= */
 function playerUpdate(dt) {
@@ -241,11 +244,11 @@ function playerUpdate(dt) {
   const sprint = (keys.ShiftLeft || keys.ShiftRight || P.sprint) && mag > 0.3 && az < -0.2; const sp = sprint ? 6.4 : 4.1;
   const sy = Math.sin(P.yaw), cy = Math.cos(P.yaw), tx = (ax * cy + az * sy) * sp, tz = (-ax * sy + az * cy) * sp;
   const k = 1 - Math.exp(-13 * dt); P.vx += (tx - P.vx) * k; P.vz += (tz - P.vz) * k; P.x += P.vx * dt; P.z += P.vz * dt; collideCircle(P, 0.42);
-  const speed = Math.hypot(P.vx, P.vz); P.bob += dt * speed * 1.9; P.stepT -= dt * speed; if (P.stepT <= 0 && speed > 1) { sfxStep(sprint); P.stepT = 2.1; }
+  const speed = Math.hypot(P.vx, P.vz); P.bob += dt * speed * 1.9; P.stepT -= dt * speed; if (P.stepT <= 0 && speed > 1) { sfxStep(sprint); emitNoise(P.x, P.z, (sprint ? 9 : 3.5) * RUN.quiet, 'step'); P.stepT = 2.1; }
   P.fireT = Math.max(0, P.fireT - dt); P.swap = Math.max(0, P.swap - dt); P.kick = Math.max(0, P.kick - dt * 7);
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { P.reloadT = 0; finishReload(); hudAmmo(); } }
   if (inp.fire && (W[P.weapon].auto || inp.touch || !P.wasFire)) { fire(); hudAmmo(); stat.shots++; } P.wasFire = inp.fire;
-  if (performance.now() / 1000 - P.lastHurt > 6 && P.hp < 60) { P.hp = Math.min(60, P.hp + dt * 4); }
+  if (performance.now() / 1000 - P.lastHurt > 6 && P.hp < Math.min(P.maxhp, RUN.regenCap)) { P.hp = Math.min(P.maxhp, RUN.regenCap, P.hp + dt * RUN.regenRate * DF().regen); }
   hudHp();
   yawObj.position.set(P.x, 1.65 + Math.sin(P.bob) * 0.035 * Math.min(1, speed / 4), P.z); yawObj.rotation.y = P.yaw;
   camera.rotation.z = Math.sin(P.bob * 0.5) * 0.004 * speed + (Math.random() - 0.5) * FX.shake * 0.02;
@@ -278,18 +281,19 @@ let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame); const raw = Math.min(0.05, (now - last) / 1000); last = now; if (!renderer) return;
   if (FX.slowT > 0) FX.slowT -= raw; const dt = raw * (FX.slowT > 0 ? 0.3 : 1);
-  if (state === 'play') { gameT += dt; playerUpdate(dt); for (const e of enemies) e.update(dt); itemsUpdate(dt); storyUpdate(); interUpdate(); objectiveUpdate(); laylaUpdate(dt); barkCool = Math.max(0, barkCool - dt); musicTick(dt); }
+  if (state === 'play') { gameT += dt; playerUpdate(dt); for (const e of enemies) e.update(dt); itemsUpdate(dt); storyUpdate(); interUpdate(); structUpdate(dt); objectiveUpdate(); laylaUpdate(dt); barkCool = Math.max(0, barkCool - dt); musicTick(dt); }
   else { yawObj.position.set(0, 1.65, 32); yawObj.rotation.y = Math.sin(now * 0.0002) * 0.25; pitchObj.rotation.x = -0.02; }
   fxUpdate(dt); screenFx(dt); if (state === 'play') mmDraw(); renderer.render(scene, camera); tagUpdate();
 }
 function begin() {
-  initAudio(); resetWorld(); $('#title').classList.add('hidden'); $('#end').classList.add('hidden'); $('#hud').classList.remove('hidden'); state = 'play'; hudAmmo(); hudHp();
+  initAudio(); resetRun(); resetWorld(); saveCheckpoint(); chapter('الفصل الأول', 'ليل الحوش... تسلّل أو اقتحم، إنت اللي تختار'); $('#title').classList.add('hidden'); $('#end').classList.add('hidden'); $('#hud').classList.remove('hidden'); state = 'play'; hudAmmo(); hudHp();
   if (!inp.touch && canvas.requestPointerLock) { try { canvas.requestPointerLock(); } catch (e) {} }
   P.frozen = false; document.body.classList.remove('cine'); setObj('خد السلاح من جنب الصناديق قدامك'); msg(inp.touch ? 'العصا الشمال للحركة، واسحب يمين للفت' : 'WASD للحركة والماوس للفت', 4000);
   play(L.intro);
 }
 if (!renderer) { $('#start').classList.add('hidden'); $('#nogl').classList.remove('hidden'); $('#nogl').textContent = 'الـ 3D مش شغال على جهازك أو المتصفح ده.'; }
-$('#start').addEventListener('click', begin); $('#again').addEventListener('click', begin);
+$('#start').addEventListener('click', begin); $('#again').addEventListener('click', () => { if (P.dead && CP) restoreCheckpoint(); else begin(); });
+document.querySelectorAll('#diff button').forEach(b => b.addEventListener('click', () => { DIFFI = +b.dataset.d; document.querySelectorAll('#diff button').forEach(x => x.classList.toggle('sel', x === b)); }));
 document.addEventListener('visibilitychange', () => { inp.fire = false; for (const k in keys) keys[k] = false; });
 resetWorld(); requestAnimationFrame(frame);
-window.__g = { moraleShock, emitNoise, PERSONAS, fallen, banterNow: () => { banterCool = 0; }, BUF, VBUF, AU, useInter, inter, ev: () => evidence, layla: () => layla, startLayla, inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
+window.__g = { interUpdate: () => interUpdate(), nearI: () => nearI, RUN, DF, throwItem, takedownTarget, saveCheckpoint, restoreCheckpoint, rankOf, applyPerk, PERKS, CP: () => CP, moraleShock, emitNoise, PERSONAS, fallen, banterNow: () => { banterCool = 0; }, BUF, VBUF, AU, useInter, inter, ev: () => evidence, layla: () => layla, startLayla, inp, hurt: hurtPlayer, P, W, enemies, S, kills: () => kills, get state() { return state; }, explode, spawnEnemies, begin, fire, storyUpdate, camera, sparks, FX, items, barrels, gate, rollDoor };
