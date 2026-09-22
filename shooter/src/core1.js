@@ -13,20 +13,31 @@ const voiceKey = (who, text) => hashText(who + '|' + text);
 const canvas = $('#c');
 let renderer = null;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' }); } catch (e) { renderer = null; }
+if (renderer) {
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.32;
+  renderer.physicallyCorrectLights = true;
+}
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#04060c');
 scene.fog = new THREE.FogExp2('#080d18', 0.024);
 const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 220);
 const yawObj = new THREE.Object3D(), pitchObj = new THREE.Object3D();
 scene.add(yawObj); yawObj.add(pitchObj); pitchObj.add(camera);
-const hemi = new THREE.HemisphereLight('#5468a0', '#1d1610', 0.62); scene.add(hemi);
-const moon = new THREE.DirectionalLight('#7f9bd6', 0.32); moon.position.set(-30, 60, 20); scene.add(moon);
+const hemi = new THREE.HemisphereLight('#5c72ab', '#171208', 0.55); scene.add(hemi);
+const moon = new THREE.DirectionalLight('#a8bdea', 0.85); moon.position.set(-26, 42, 16); scene.add(moon); moon.target.position.set(0, 0, -6); scene.add(moon.target);
+moon.castShadow = true; moon.shadow.mapSize.set(1024, 1024); moon.shadow.camera.near = 5; moon.shadow.camera.far = 110;
+moon.shadow.camera.left = -46; moon.shadow.camera.right = 46; moon.shadow.camera.top = 46; moon.shadow.camera.bottom = -46; moon.shadow.bias = -0.0018; moon.shadow.normalBias = 0.02;
+const rim = new THREE.DirectionalLight('#3d5fb0', 0.34); rim.position.set(24, 18, -34); scene.add(rim);            // cool kicker from the storm side
+const bounce = new THREE.HemisphereLight('#324066', '#221708', 0.32); scene.add(bounce);                          // faked ground/wall bounce so shadow sides aren't pure black
 function resize() {
   if (!renderer) return;
   const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.fov = w / h < 1 ? 82 : 72; camera.updateProjectionMatrix();
+  composerResize(w, h);
 }
+setupComposer();
 addEventListener('resize', resize); resize();
 
 /* ================= procedural textures ================= */
@@ -52,20 +63,21 @@ function metalTex(color, rx, ry, rust) {
   }, rx, ry);
 }
 const phong = (o) => new THREE.MeshPhongMaterial(Object.assign({ shininess: 10, specular: 0x222226 }, o));
+const std = (o) => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.82, metalness: 0.08 }, o));
 const MAT = {
-  ground: phong({ map: TEX.asphalt, color: 0xb0b0b0, shininess: 45, specular: 0x556070 }),
-  concrete: phong({ map: TEX.concrete }),
-  crate: phong({ map: TEX.crate }),
-  metalGreen: phong({ map: metalTex('#3e5a48', 2, 1, 260) }), metalBlue: phong({ map: metalTex('#33506e', 2, 1, 260) }),
-  metalRed: phong({ map: metalTex('#7a3328', 2, 1, 300) }), metalGrey: phong({ map: metalTex('#7f8790', 6, 2, 160) }),
-  wall: phong({ map: metalTex('#8b8f94', 14, 3, 220) }), dark: phong({ color: 0x1b1d22 }), pole: phong({ color: 0x2a2c30 }),
-  barrel: phong({ color: 0xb02a1e, shininess: 30, specular: 0x553322 }), barrelBand: phong({ color: 0x2b0d09 }),
-  skin: phong({ color: 0xc6906a }), hi: new THREE.MeshBasicMaterial({ color: 0xffd98a })
+  ground: std({ map: TEX.asphalt, color: 0xdadada, roughness: 0.92, metalness: 0.03 }),
+  concrete: std({ map: TEX.concrete, roughness: 0.95 }),
+  crate: std({ map: TEX.crate, roughness: 0.85 }),
+  metalGreen: std({ map: metalTex('#3e5a48', 2, 1, 260), roughness: 0.45, metalness: 0.6 }), metalBlue: std({ map: metalTex('#33506e', 2, 1, 260), roughness: 0.45, metalness: 0.6 }),
+  metalRed: std({ map: metalTex('#7a3328', 2, 1, 300), roughness: 0.45, metalness: 0.6 }), metalGrey: std({ map: metalTex('#7f8790', 6, 2, 160), roughness: 0.4, metalness: 0.65 }),
+  wall: std({ map: metalTex('#8b8f94', 14, 3, 220), roughness: 0.55, metalness: 0.5 }), dark: std({ color: 0x1b1d22, roughness: 0.8 }), pole: std({ color: 0x2a2c30, roughness: 0.5, metalness: 0.4 }),
+  barrel: std({ color: 0xb02a1e, roughness: 0.4, metalness: 0.5 }), barrelBand: std({ color: 0x2b0d09, roughness: 0.6 }),
+  skin: std({ color: 0xc6906a, roughness: 0.75 }), hi: new THREE.MeshBasicMaterial({ color: 0xffd98a })
 };
 const AIL = new THREE.TextureLoader();
 function aiTex(name, rx, ry) { if (!AITEX[name]) return null; const t = AIL.load(AITEX[name]); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; }
 {
-  const set = (m, t, col) => { if (!t) return; m.map = t; if (col != null) m.color.setHex(col); m.needsUpdate = true; };
+  const set = (m, t, col) => { if (!t) return; m.map = t; m.bumpMap = t; m.bumpScale = 0.045; if (col != null) m.color.setHex(col); m.needsUpdate = true; };
   set(MAT.ground, aiTex('ground_wet', 55, 55), 0x8f8f8f); set(MAT.concrete, aiTex('concrete_wall', 5, 2), 0xffffff); set(MAT.crate, aiTex('wood_crate', 1, 1), 0xffffff); set(MAT.wall, aiTex('metal_panel', 12, 3), 0xb5bbc2);
   const mp = aiTex('metal_panel', 2, 1); if (mp) { set(MAT.metalGreen, mp, 0x5f8a6b); set(MAT.metalBlue, mp, 0x4a76a3); set(MAT.metalRed, mp, 0xb05646); set(MAT.metalGrey, mp, 0xc2c8cf); }
   if (AITEX.night_sky) { const t = AIL.load(AITEX.night_sky); const sky = new THREE.Mesh(new THREE.SphereGeometry(200, 32, 16), new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, fog: false, color: 0x8c99b0, depthWrite: false })); sky.renderOrder = -10; scene.add(sky); }

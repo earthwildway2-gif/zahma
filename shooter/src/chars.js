@@ -8,16 +8,16 @@ class GB {
     if (g.index) for (let i = 0; i < g.index.count; i++) this.idx.push(base + g.index.getX(i)); else for (let i = 0; i < p.count; i++) this.idx.push(base + i);
     g.dispose();
   }
-  mesh(mat) { const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3)); bg.setAttribute('normal', new THREE.Float32BufferAttribute(this.nor, 3)); bg.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3)); bg.setIndex(this.idx); return new THREE.Mesh(bg, mat); }
+  mesh(mat) { const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3)); bg.setAttribute('normal', new THREE.Float32BufferAttribute(this.nor, 3)); bg.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3)); bg.setIndex(this.idx); const m = new THREE.Mesh(bg, mat); m.castShadow = true; m.receiveShadow = true; return m; }
 }
 const _cm = new THREE.Matrix4(), _cq = new THREE.Quaternion(), _ce = new THREE.Euler(), _cs = new V3(), _cp = new V3();
-const GSPH = new THREE.SphereGeometry(1, 16, 12), GBOX = new THREE.BoxGeometry(1, 1, 1);
+const GSPH = new THREE.SphereGeometry(1, 20, 15), GBOX = new THREE.BoxGeometry(1, 1, 1);
 function ell(gb, x, y, z, rx, ry, rz, hex, ex = 0, ey = 0, ez = 0) { _ce.set(ex, ey, ez); _cq.setFromEuler(_ce); _cm.compose(_cp.set(x, y, z), _cq, _cs.set(rx, ry, rz)); gb.add(GSPH, _cm, hex); }
-function cyl(gb, x, y, z, rt, rb, h, hex, ex = 0, ey = 0, ez = 0) { const g = new THREE.CylinderGeometry(rt, rb, h, 12, 1); _ce.set(ex, ey, ez); _cq.setFromEuler(_ce); _cm.compose(_cp.set(x, y, z), _cq, _cs.set(1, 1, 1)); gb.add(g, _cm, hex); g.dispose(); }
+function cyl(gb, x, y, z, rt, rb, h, hex, ex = 0, ey = 0, ez = 0) { const g = new THREE.CylinderGeometry(rt, rb, h, 16, 1); _ce.set(ex, ey, ez); _cq.setFromEuler(_ce); _cm.compose(_cp.set(x, y, z), _cq, _cs.set(1, 1, 1)); gb.add(g, _cm, hex); g.dispose(); }
 function bxx(gb, x, y, z, w, h, d, hex, ex = 0, ey = 0, ez = 0) { _ce.set(ex, ey, ez); _cq.setFromEuler(_ce); _cm.compose(_cp.set(x, y, z), _cq, _cs.set(w, h, d)); gb.add(GBOX, _cm, hex); }
 const SKINS = ['#c9976f', '#b98058', '#9b6a46', '#dcb08a', '#a87752'];
 function buildHuman(o) {
-  const F = !!o.female, sh = F ? 0.235 : 0.285, mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 14, specular: 0x1e1e20 }), g = new THREE.Group();
+  const F = !!o.female, sh = F ? 0.235 : 0.285, mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.68, metalness: 0.05 }), g = new THREE.Group();
   const top = o.top, skin = o.skin, sleeve = o.bare ? skin : (o.sleeve || top);
   const T = new GB();
   ell(T, 0, 0.93, 0, F ? 0.19 : 0.175, 0.13, F ? 0.135 : 0.125, o.pants);                       // hips
@@ -40,7 +40,7 @@ function buildHuman(o) {
   cyl(T, 0, 1.0, 0, 0.17, 0.175, 0.05, '#121212');                                              // belt
   if (o.pack) bxx(T, 0, 1.3, 0.16, F ? 0.26 : 0.32, 0.36, 0.13, o.pack);
   if (o.strap) { bxx(T, 0.06, 1.38, -0.02, 0.03, 0.62, 0.32, o.strap, 0, 0, -0.32); }
-  const body = T.mesh(mat); g.add(body);
+  const body = T.mesh(mat); body.castShadow = true; body.receiveShadow = true; g.add(body);
   const mkArm = (sign) => {
     const A = new THREE.Group(); A.position.set(sign * sh, 1.47, 0);
     const U = new GB(); cyl(U, 0, -0.14, 0, F ? 0.043 : 0.052, F ? 0.036 : 0.043, 0.29, sleeve); A.add(U.mesh(mat));

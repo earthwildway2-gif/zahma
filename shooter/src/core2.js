@@ -3,7 +3,7 @@
 const solids = [], lamps = [], barrels = [], items = [];
 const worldG = new THREE.Group(); scene.add(worldG);
 function addSolid(x, z, w, d, h, mat, o = {}) {
-  const y0 = o.y || 0, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y0 + h / 2, z); worldG.add(m);
+  const y0 = o.y || 0, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y0 + h / 2, z); m.castShadow = h < 8; m.receiveShadow = true; worldG.add(m);
   const s = { minx: x - w / 2, maxx: x + w / 2, minz: z - d / 2, maxz: z + d / 2, y0, y1: y0 + h, mesh: m, solid: o.solid !== false, metal: !!o.metal };
   solids.push(s); return s;
 }
@@ -12,7 +12,7 @@ const GLOW = glowTex('255,214,150'), GLOW_ORANGE = glowTex('255,150,60'), GLOW_S
 function sprite(tex, size, opacity, additive = true) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity, depthWrite: false, fog: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending })); s.scale.set(size, size, 1); return s; }
 
 // ground
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), MAT.ground); ground.rotation.x = -Math.PI / 2; worldG.add(ground);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(170, 170), MAT.ground); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; worldG.add(ground);
 // perimeter (west, east, north, south with a gate)
 addSolid(-34, -3, 0.5, 74, 3.4, MAT.concrete); addSolid(34, -3, 0.5, 74, 3.4, MAT.concrete);
 addSolid(0, -40, 68.5, 0.6, 8, MAT.wall);
@@ -23,7 +23,7 @@ addSolid(-22, -27, 0.7, 26, 8, MAT.wall, { metal: true }); addSolid(22, -27, 0.7
 addSolid(-12.25, -14, 19.5, 0.7, 8, MAT.wall, { metal: true }); addSolid(12.25, -14, 19.5, 0.7, 8, MAT.wall, { metal: true });
 addSolid(0, -14, 5, 0.7, 4.4, MAT.wall, { y: 3.6, metal: true });
 addSolid(0, -27, 44, 26, 0.4, MAT.dark, { y: 8 });
-if (AITEX.warehouse_floor) { const ft = aiTex('warehouse_floor', 8, 5); const fl = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.MeshPhongMaterial({ map: ft, shininess: 60, specular: 0x445566 })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.015, -27); worldG.add(fl); }
+if (AITEX.warehouse_floor) { const ft = aiTex('warehouse_floor', 8, 5); const fl = new THREE.Mesh(new THREE.PlaneGeometry(44, 26), new THREE.MeshStandardMaterial({ map: ft, roughness: 0.3, metalness: 0.15 })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.015, -27); fl.receiveShadow = true; worldG.add(fl); }
 const rollDoor = addSolid(0, -14, 5, 0.5, 3.6, MAT.metalGrey, { metal: true });
 // office at the back
 addSolid(-4.5, -31, 7, 0.4, 3.4, MAT.concrete); addSolid(4.5, -31, 7, 0.4, 3.4, MAT.concrete);

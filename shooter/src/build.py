@@ -1,6 +1,6 @@
 import pathlib, re
 d=pathlib.Path('/tmp/sh')
-js="".join((d/n).read_text(encoding='utf-8') for n in ['core1.js','core2.js','core3a.js','core3b.js','core4.js','mind.js','chars.js','struct.js','core5.js'])
+js="".join((d/n).read_text(encoding='utf-8') for n in ['postfx_lib.js','core1.js','core2.js','core3a.js','core3b.js','core4.js','mind.js','chars.js','struct.js','core5.js'])
 html=(d/'shell.html').read_text(encoding='utf-8')+js+"\n})();\n</script>\n</body>\n</html>\n"
 out=d/'shooter.html'
 # keep any embedded voice clips already present in the built file

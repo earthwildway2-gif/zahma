@@ -283,7 +283,7 @@ function frame(now) {
   if (FX.slowT > 0) FX.slowT -= raw; const dt = raw * (FX.slowT > 0 ? 0.3 : 1);
   if (state === 'play') { gameT += dt; playerUpdate(dt); for (const e of enemies) e.update(dt); itemsUpdate(dt); storyUpdate(); interUpdate(); structUpdate(dt); objectiveUpdate(); laylaUpdate(dt); barkCool = Math.max(0, barkCool - dt); musicTick(dt); }
   else { yawObj.position.set(0, 1.65, 32); yawObj.rotation.y = Math.sin(now * 0.0002) * 0.25; pitchObj.rotation.x = -0.02; }
-  fxUpdate(dt); screenFx(dt); if (state === 'play') mmDraw(); renderer.render(scene, camera); tagUpdate();
+  fxUpdate(dt); screenFx(dt); if (state === 'play') mmDraw(); renderFrame(performance.now()); tagUpdate();
 }
 function begin() {
   initAudio(); resetRun(); resetWorld(); saveCheckpoint(); chapter('الفصل الأول', 'ليل الحوش... تسلّل أو اقتحم، إنت اللي تختار'); $('#title').classList.add('hidden'); $('#end').classList.add('hidden'); $('#hud').classList.remove('hidden'); state = 'play'; hudAmmo(); hudHp();
