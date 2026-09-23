@@ -52,7 +52,7 @@ func _build_environment() -> void:
 	sky.sky_material = sky_mat
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 1.6
+	e.ambient_light_energy = 1.0
 	e.fog_enabled = true
 	e.fog_light_color = Color(0.11, 0.13, 0.2)
 	e.fog_density = 0.011
@@ -86,7 +86,7 @@ func _build_environment() -> void:
 	var rim := DirectionalLight3D.new()   # cool kicker from the opposite side for a two-tone cinematic look
 	rim.rotation_degrees = Vector3(-25, 130, 0)
 	rim.light_color = Color(0.35, 0.5, 0.95)
-	rim.light_energy = 0.35
+	rim.light_energy = 0.15
 	add_child(rim)
 
 	get_viewport().msaa_3d = Viewport.MSAA_2X

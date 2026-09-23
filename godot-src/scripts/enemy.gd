@@ -76,6 +76,8 @@ func _ready() -> void:
 			mesh_inst.set_surface_override_material(si, mat)
 		_add_outline(mesh_inst, 0.022 * model_scale)
 
+	_build_gear()
+
 	var label := Label3D.new()
 	label.text = enemy_name
 	label.position.y = 2.05 * scale_mul
@@ -112,6 +114,86 @@ func _find_anim_player(n: Node) -> AnimationPlayer:
 		if r:
 			return r
 	return null
+
+func _find_skeleton(n: Node) -> Skeleton3D:
+	if n is Skeleton3D:
+		return n
+	for c in n.get_children():
+		var r := _find_skeleton(c)
+		if r:
+			return r
+	return null
+
+func _gear_mat(color: Color) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = _toon_shader_res()
+	m.set_shader_parameter("albedo_color", color)
+	return m
+
+func _attach_prop(skel: Skeleton3D, bone_name: String, mesh: Mesh, offset: Vector3, mat: ShaderMaterial, rot := Vector3.ZERO) -> void:
+	var bone_idx := skel.find_bone(bone_name)
+	if bone_idx < 0:
+		return
+	var att := BoneAttachment3D.new()
+	att.bone_name = bone_name
+	skel.add_child(att)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = offset
+	mi.rotation_degrees = rot
+	att.add_child(mi)
+
+func _build_gear() -> void:
+	var skel := _find_skeleton(model_root)
+	if not skel:
+		return
+	var gear_dark := _gear_mat(Color(0.06, 0.06, 0.07))
+	var gear_mid := _gear_mat(Color(0.14, 0.13, 0.1))
+	# NOTE: sizes/offsets below are in real human-scale meters, unscaled.
+	# BoneAttachment3D already inherits the skeleton's world scale (model_scale),
+	# so multiplying here again would double-scale everything.
+
+	# helmet / cap
+	var helmet := SphereMesh.new(); helmet.radius = 0.14; helmet.height = 0.24
+	helmet.radial_segments = 10; helmet.rings = 6
+	_attach_prop(skel, "Skeleton_neck_joint_2", helmet, Vector3(0, 0.09, 0), gear_dark)
+	var brim := BoxMesh.new(); brim.size = Vector3(0.24, 0.03, 0.14)
+	_attach_prop(skel, "Skeleton_neck_joint_2", brim, Vector3(0, 0.13, 0.05), gear_dark)
+
+	# chest vest (front plate)
+	var vest := BoxMesh.new(); vest.size = Vector3(0.32, 0.34, 0.14)
+	_attach_prop(skel, "torso_joint_3", vest, Vector3(0, 0.02, 0.05), gear_mid)
+	for side in [-1, 1]:
+		var strap := BoxMesh.new(); strap.size = Vector3(0.07, 0.22, 0.09)
+		_attach_prop(skel, "torso_joint_3", strap, Vector3(0.14 * side, 0.14, 0), gear_dark)
+
+	# backpack
+	var pack := BoxMesh.new(); pack.size = Vector3(0.26, 0.32, 0.16)
+	_attach_prop(skel, "torso_joint_3", pack, Vector3(0, 0.0, -0.14), gear_dark)
+
+	# belt / hip pouches
+	var belt := BoxMesh.new(); belt.size = Vector3(0.36, 0.09, 0.24)
+	_attach_prop(skel, "Skeleton_torso_joint_1", belt, Vector3(0, 0.0, 0), gear_dark)
+	for side in [-1, 1]:
+		var pouch := BoxMesh.new(); pouch.size = Vector3(0.1, 0.1, 0.08)
+		_attach_prop(skel, "Skeleton_torso_joint_1", pouch, Vector3(0.16 * side, -0.06, 0.1), gear_mid)
+
+	# shoulder pads
+	for side_name in ["R", "L"]:
+		var pad := BoxMesh.new(); pad.size = Vector3(0.13, 0.1, 0.13)
+		_attach_prop(skel, "Skeleton_arm_joint_%s" % side_name, pad, Vector3(0, 0.02, 0), gear_dark)
+
+	# boots
+	for bone in ["leg_joint_R_5", "leg_joint_L_5"]:
+		var boot := BoxMesh.new(); boot.size = Vector3(0.15, 0.12, 0.24)
+		_attach_prop(skel, bone, boot, Vector3(0, -0.02, 0.03), gear_dark)
+
+	# a more readable held weapon: body + stock
+	var gun_body := BoxMesh.new(); gun_body.size = Vector3(0.07, 0.09, 0.45)
+	_attach_prop(skel, "Skeleton_arm_joint_R__3_", gun_body, Vector3(0.02, -0.02, -0.32), gear_dark)
+	var gun_stock := BoxMesh.new(); gun_stock.size = Vector3(0.05, 0.1, 0.16)
+	_attach_prop(skel, "Skeleton_arm_joint_R__3_", gun_stock, Vector3(0.02, -0.03, -0.05), gear_dark)
 
 func _find_mesh(n: Node) -> MeshInstance3D:
 	if n is MeshInstance3D:
