@@ -60,20 +60,21 @@ func _ready() -> void:
 			anim.pause()
 
 	mesh_inst = _find_mesh(model_root)
-	if mesh_inst:
-		for i in mesh_inst.get_surface_override_material_count() if mesh_inst.mesh else 0:
-			pass
-		if mesh_inst.mesh:
-			for si in mesh_inst.mesh.get_surface_count():
-				var base_mat := mesh_inst.mesh.surface_get_material(si)
-				var mat: StandardMaterial3D
-				if base_mat is StandardMaterial3D:
-					mat = base_mat.duplicate()
-				else:
-					mat = StandardMaterial3D.new()
-				mat.albedo_color = body_tint
-				mat.roughness = 0.8
-				mesh_inst.set_surface_override_material(si, mat)
+	if mesh_inst and mesh_inst.mesh:
+		for si in mesh_inst.mesh.get_surface_count():
+			var base_mat := mesh_inst.mesh.surface_get_material(si)
+			var tex: Texture2D = null
+			if base_mat is StandardMaterial3D and base_mat.albedo_texture:
+				tex = base_mat.albedo_texture
+			var mat := ShaderMaterial.new()
+			mat.shader = _toon_shader_res()
+			mat.set_shader_parameter("albedo_color", body_tint)
+			if tex:
+				mat.set_shader_parameter("use_tex", 1.0)
+				mat.set_shader_parameter("albedo_tex", tex)
+				mat.set_shader_parameter("uv_scale", Vector2(1, 1))
+			mesh_inst.set_surface_override_material(si, mat)
+		_add_outline(mesh_inst, 0.022 * model_scale)
 
 	var label := Label3D.new()
 	label.text = enemy_name
@@ -128,6 +129,61 @@ func _play(sound_name: String, vol: float = 1.0) -> void:
 		sfx.volume_db = linear_to_db(vol)
 		sfx.play()
 
+static var _toon_shader_cache: Shader
+static func _toon_shader_res() -> Shader:
+	if _toon_shader_cache:
+		return _toon_shader_cache
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode diffuse_toon, specular_toon, cull_back;
+uniform vec4 albedo_color : source_color = vec4(1.0);
+uniform sampler2D albedo_tex : source_color, filter_linear;
+uniform float use_tex = 0.0;
+uniform vec2 uv_scale = vec2(1.0, 1.0);
+void fragment() {
+	vec3 base = albedo_color.rgb;
+	if (use_tex > 0.5) {
+		base *= texture(albedo_tex, UV * uv_scale).rgb;
+	}
+	ALBEDO = base;
+	ROUGHNESS = 0.7;
+	METALLIC = 0.0;
+	SPECULAR = 0.3;
+}
+"""
+	_toon_shader_cache = sh
+	return sh
+
+static var _outline_shader_cache: Shader
+static func _outline_shader_res() -> Shader:
+	if _outline_shader_cache:
+		return _outline_shader_cache
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_front, unshaded, depth_draw_always;
+uniform float outline_width = 0.015;
+void vertex() {
+	VERTEX += NORMAL * outline_width;
+}
+void fragment() {
+	ALBEDO = vec3(0.02, 0.02, 0.03);
+}
+"""
+	_outline_shader_cache = sh
+	return sh
+
+func _add_outline(mi: MeshInstance3D, width: float) -> void:
+	var outline := MeshInstance3D.new()
+	outline.mesh = mi.mesh
+	var m := ShaderMaterial.new()
+	m.shader = _outline_shader_res()
+	m.set_shader_parameter("outline_width", width)
+	outline.material_override = m
+	outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.add_child(outline)
+
 func take_damage(amount: float, _hit_pos: Vector3 = Vector3.ZERO, headshot: bool = false) -> void:
 	if state == "dead":
 		return
@@ -136,12 +192,12 @@ func take_damage(amount: float, _hit_pos: Vector3 = Vector3.ZERO, headshot: bool
 	if mesh_inst:
 		for si in mesh_inst.get_surface_override_material_count():
 			var m := mesh_inst.get_surface_override_material(si)
-			if m is StandardMaterial3D:
-				var orig: Color = m.albedo_color
-				m.albedo_color = Color(1, 1, 1)
+			if m is ShaderMaterial:
+				var orig: Color = m.get_shader_parameter("albedo_color")
+				m.set_shader_parameter("albedo_color", Color(2.5, 2.5, 2.5))
 				get_tree().create_timer(0.08).timeout.connect(func():
 					if is_instance_valid(self) and m:
-						m.albedo_color = orig
+						m.set_shader_parameter("albedo_color", orig)
 				)
 	if health <= 0:
 		_die()

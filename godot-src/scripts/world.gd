@@ -52,13 +52,13 @@ func _build_environment() -> void:
 	sky.sky_material = sky_mat
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.9
+	e.ambient_light_energy = 1.6
 	e.fog_enabled = true
 	e.fog_light_color = Color(0.11, 0.13, 0.2)
 	e.fog_density = 0.011
 	e.fog_aerial_perspective = 0.3
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_white = 1.4
+	e.tonemap_white = 1.6
 	e.glow_enabled = true
 	e.glow_intensity = 1.1
 	e.glow_bloom = 0.15
@@ -66,16 +66,16 @@ func _build_environment() -> void:
 	e.glow_hdr_threshold = 0.85
 	e.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	e.adjustment_enabled = true
-	e.adjustment_brightness = 1.02
-	e.adjustment_contrast = 1.12
-	e.adjustment_saturation = 1.08
+	e.adjustment_brightness = 1.35
+	e.adjustment_contrast = 1.22
+	e.adjustment_saturation = 1.28
 	env.environment = e
 	add_child(env)
 
 	var moon := DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-52, -40, 0)
 	moon.light_color = Color(0.78, 0.83, 1.0)
-	moon.light_energy = 1.35
+	moon.light_energy = 2.0
 	moon.shadow_enabled = true
 	moon.directional_shadow_max_distance = 90.0
 	moon.shadow_blur = 1.6
@@ -143,6 +143,71 @@ func _tex(name: String) -> Texture2D:
 	_tex_cache[name] = t
 	return t
 
+var _toon_shader: Shader
+func _toon_shader_res() -> Shader:
+	if _toon_shader:
+		return _toon_shader
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode diffuse_toon, specular_toon, cull_back;
+uniform vec4 albedo_color : source_color = vec4(1.0);
+uniform sampler2D albedo_tex : source_color, filter_linear;
+uniform float use_tex = 0.0;
+uniform vec2 uv_scale = vec2(1.0, 1.0);
+void fragment() {
+	vec3 base = albedo_color.rgb;
+	if (use_tex > 0.5) {
+		base *= texture(albedo_tex, UV * uv_scale).rgb;
+	}
+	ALBEDO = base;
+	ROUGHNESS = 0.75;
+	METALLIC = 0.0;
+	SPECULAR = 0.25;
+}
+"""
+	_toon_shader = sh
+	return sh
+
+func _toon_mat(color: Color, tex_name := "", uv_scale := Vector2(1, 1)) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = _toon_shader_res()
+	m.set_shader_parameter("albedo_color", color)
+	if tex_name != "":
+		m.set_shader_parameter("use_tex", 1.0)
+		m.set_shader_parameter("albedo_tex", _tex(tex_name))
+		m.set_shader_parameter("uv_scale", uv_scale)
+	return m
+
+var _outline_shader: Shader
+func _outline_shader_res() -> Shader:
+	if _outline_shader:
+		return _outline_shader
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_front, unshaded, depth_draw_always;
+uniform float outline_width = 0.02;
+void vertex() {
+	VERTEX += NORMAL * outline_width;
+}
+void fragment() {
+	ALBEDO = vec3(0.02, 0.02, 0.03);
+}
+"""
+	_outline_shader = sh
+	return sh
+
+func _add_outline(mesh_inst: MeshInstance3D, width := 0.02) -> void:
+	var outline := MeshInstance3D.new()
+	outline.mesh = mesh_inst.mesh
+	var m := ShaderMaterial.new()
+	m.shader = _outline_shader_res()
+	m.set_shader_parameter("outline_width", width)
+	outline.material_override = m
+	outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mesh_inst.add_child(outline)
+
 func _build_ground() -> void:
 	var body := StaticBody3D.new()
 	body.name = "Ground"
@@ -158,12 +223,7 @@ func _build_ground() -> void:
 	plane.subdivide_width = 1
 	plane.subdivide_depth = 1
 	mesh.mesh = plane
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.6, 0.6, 0.62)
-	mat.albedo_texture = _tex("ground")
-	mat.uv1_scale = Vector3(30, 42, 1)
-	mat.roughness = 0.92
-	mesh.material_override = mat
+	mesh.material_override = _toon_mat(Color(0.62, 0.63, 0.68), "ground", Vector2(30, 42))
 	body.add_child(mesh)
 	body.position.z = -15
 	add_child(body)
@@ -180,16 +240,11 @@ func _add_box(pos: Vector3, size: Vector3, color: Color, name_hint := "", tex_na
 	var box := BoxMesh.new()
 	box.size = size
 	mesh.mesh = box
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.8
-	if tex_name != "":
-		mat.albedo_texture = _tex(tex_name)
-		mat.uv1_scale = Vector3(max(1.0, size.x / 1.4), max(1.0, size.y / 1.0), max(1.0, size.z / 1.4))
-	mesh.material_override = mat
+	mesh.material_override = _toon_mat(color, tex_name, Vector2(max(1.0, size.x / 1.4), max(1.0, size.y / 1.0)))
 	body.add_child(mesh)
 	body.position = pos
 	add_child(body)
+	_add_outline(mesh, 0.04)
 	return body
 
 func _add_lamp(pos: Vector3) -> void:
@@ -251,8 +306,7 @@ func _build_warehouse() -> void:
 	var fcol := CollisionShape3D.new(); var fshape := BoxShape3D.new(); fshape.size = Vector3(28, 0.2, 38); fcol.shape = fshape; fcol.position.y = -0.1
 	floor_body.add_child(fcol)
 	var fmesh := MeshInstance3D.new(); var fplane := PlaneMesh.new(); fplane.size = Vector2(28, 38); fmesh.mesh = fplane
-	var fmat := StandardMaterial3D.new(); fmat.albedo_color = Color(0.55, 0.55, 0.58); fmat.albedo_texture = _tex("concrete"); fmat.uv1_scale = Vector3(10, 14, 1); fmat.roughness = 0.55
-	fmesh.material_override = fmat
+	fmesh.material_override = _toon_mat(Color(0.55, 0.55, 0.58), "concrete", Vector2(10, 14))
 	floor_body.add_child(fmesh)
 	floor_body.position = Vector3(0, 0.01, -31)
 	add_child(floor_body)
