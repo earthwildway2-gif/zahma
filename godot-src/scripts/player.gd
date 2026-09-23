@@ -36,11 +36,14 @@ var muzzle: Node3D
 var collider: CollisionShape3D
 var sfx: AudioStreamPlayer3D
 var footstep_t := 0.0
+var shake_t := 0.0
+var shake_seed := 0.0
 
 signal health_changed(hp, max_hp)
 signal ammo_changed(mag_count, res_count, weapon_name)
 signal died
 signal weapon_switched(weapon_id)
+signal hit_taken(amount)
 
 func _ready() -> void:
 	add_to_group("player")
@@ -151,6 +154,16 @@ func _physics_process(delta: float) -> void:
 	velocity.z = lerp(velocity.z, target_vel.z, delta * ACCEL)
 
 	move_and_slide()
+
+	if shake_t > 0:
+		shake_t = max(0.0, shake_t - delta)
+		shake_seed += delta * 40.0
+		var amt: float = shake_t * 0.06
+		camera.h_offset = sin(shake_seed) * amt
+		camera.v_offset = cos(shake_seed * 1.3) * amt * 0.6
+	else:
+		camera.h_offset = 0.0
+		camera.v_offset = 0.0
 
 	var moving := Vector2(velocity.x, velocity.z).length() > 0.3 and is_on_floor()
 	var t := Time.get_ticks_msec() / 1000.0
@@ -263,5 +276,7 @@ func _muzzle_flash() -> void:
 func take_damage(amount: float) -> void:
 	health = max(0.0, health - amount)
 	health_changed.emit(health, max_health)
+	hit_taken.emit(amount)
+	shake_t = min(0.4, shake_t + 0.16 + amount * 0.006)
 	if health <= 0:
 		died.emit()

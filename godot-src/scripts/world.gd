@@ -18,11 +18,25 @@ func _ready() -> void:
 	_build_ground()
 	_build_yard()
 	_build_warehouse()
+	await _bake_navigation()
 	_spawn_player()
 	_spawn_yard_enemies()
 	_spawn_pickups()
 	_build_hud()
 	_set_status("خلّص الحرس اللي في الحوش")
+	_start_music()
+
+func _start_music() -> void:
+	var music := AudioStreamPlayer.new()
+	var stream: AudioStream = load("res://sfx/music_tension.wav")
+	if stream:
+		if stream is AudioStreamWAV:
+			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		music.stream = stream
+		music.volume_db = -14.0
+		music.autoplay = true
+		add_child(music)
+		music.play()
 
 func _build_environment() -> void:
 	var env := WorldEnvironment.new()
@@ -53,6 +67,14 @@ func _build_environment() -> void:
 	moon.shadow_enabled = true
 	add_child(moon)
 
+var _tex_cache := {}
+func _tex(name: String) -> Texture2D:
+	if _tex_cache.has(name):
+		return _tex_cache[name]
+	var t: Texture2D = load("res://textures/%s.jpg" % name)
+	_tex_cache[name] = t
+	return t
+
 func _build_ground() -> void:
 	var body := StaticBody3D.new()
 	body.name = "Ground"
@@ -65,16 +87,20 @@ func _build_ground() -> void:
 	var mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(90, 130)
+	plane.subdivide_width = 1
+	plane.subdivide_depth = 1
 	mesh.mesh = plane
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.18, 0.18, 0.2)
-	mat.roughness = 0.9
+	mat.albedo_color = Color(0.6, 0.6, 0.62)
+	mat.albedo_texture = _tex("ground")
+	mat.uv1_scale = Vector3(30, 42, 1)
+	mat.roughness = 0.92
 	mesh.material_override = mat
 	body.add_child(mesh)
 	body.position.z = -15
 	add_child(body)
 
-func _add_box(pos: Vector3, size: Vector3, color: Color, name_hint := "") -> StaticBody3D:
+func _add_box(pos: Vector3, size: Vector3, color: Color, name_hint := "", tex_name := "") -> StaticBody3D:
 	var body := StaticBody3D.new()
 	if name_hint != "": body.name = name_hint
 	var col := CollisionShape3D.new()
@@ -89,6 +115,9 @@ func _add_box(pos: Vector3, size: Vector3, color: Color, name_hint := "") -> Sta
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = 0.8
+	if tex_name != "":
+		mat.albedo_texture = _tex(tex_name)
+		mat.uv1_scale = Vector3(max(1.0, size.x / 1.4), max(1.0, size.y / 1.0), max(1.0, size.z / 1.4))
 	mesh.material_override = mat
 	body.add_child(mesh)
 	body.position = pos
@@ -104,44 +133,64 @@ func _add_lamp(pos: Vector3) -> void:
 	light.omni_range = 12.0
 	add_child(light)
 
+var nav_region: NavigationRegion3D
+
+func _bake_navigation() -> void:
+	nav_region = NavigationRegion3D.new()
+	var navmesh := NavigationMesh.new()
+	navmesh.agent_radius = 0.45
+	navmesh.agent_height = 1.8
+	navmesh.agent_max_climb = 0.3
+	navmesh.cell_size = 0.25
+	navmesh.cell_height = 0.25
+	navmesh.filter_baking_aabb = AABB(Vector3(-45, -1, -55), Vector3(90, 8, 90))
+	navmesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nav_region.navigation_mesh = navmesh
+	add_child(nav_region)
+	nav_region.bake_navigation_mesh()
+	# let the NavigationServer finish syncing the new region into its map before any agent queries it
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
 func _build_yard() -> void:
-	var crate_color := Color(0.35, 0.26, 0.15)
+	var crate_color := Color(0.85, 0.78, 0.62)
 	var positions := [
 		Vector3(-6, 0.5, -2), Vector3(4, 0.5, -6), Vector3(8, 0.5, 4),
 		Vector3(-9, 0.5, 8), Vector3(0, 0.5, -10), Vector3(-4, 0.5, 12),
 		Vector3(10, 0.5, -4), Vector3(-11, 0.5, -6)
 	]
 	for p in positions:
-		_add_box(p, Vector3(1.4, 1.0, 1.4), crate_color)
-	_add_box(Vector3(0, 2, 22), Vector3(44, 4, 1), Color(0.2, 0.2, 0.24))
-	_add_box(Vector3(-22, 2, 5), Vector3(1, 4, 34), Color(0.2, 0.2, 0.24))
-	_add_box(Vector3(22, 2, 5), Vector3(1, 4, 34), Color(0.2, 0.2, 0.24))
+		_add_box(p, Vector3(1.4, 1.0, 1.4), crate_color, "", "wood")
+	_add_box(Vector3(0, 2, 22), Vector3(44, 4, 1), Color(0.75, 0.75, 0.78), "", "concrete")
+	_add_box(Vector3(-22, 2, 5), Vector3(1, 4, 34), Color(0.75, 0.75, 0.78), "", "concrete")
+	_add_box(Vector3(22, 2, 5), Vector3(1, 4, 34), Color(0.75, 0.75, 0.78), "", "concrete")
 	_add_lamp(Vector3(-14, 0, 10))
 	_add_lamp(Vector3(14, 0, 10))
 	_add_lamp(Vector3(-14, 0, -6))
 	_add_lamp(Vector3(14, 0, -6))
-	_add_box(Vector3(-16, 1.5, -10), Vector3(3, 3, 6), Color(0.3, 0.42, 0.36))
-	_add_box(Vector3(16, 1.5, -12), Vector3(3, 3, 6), Color(0.42, 0.3, 0.28))
+	_add_box(Vector3(-16, 1.5, -10), Vector3(3, 3, 6), Color(0.55, 0.75, 0.65), "", "metal")
+	_add_box(Vector3(16, 1.5, -12), Vector3(3, 3, 6), Color(0.8, 0.55, 0.5), "", "metal")
 
 func _build_warehouse() -> void:
-	var wall_col := Color(0.22, 0.22, 0.26)
-	_add_box(Vector3(0, 2.5, -50), Vector3(28, 5, 1), wall_col)
-	_add_box(Vector3(-14, 2.5, -31), Vector3(1, 5, 38), wall_col)
-	_add_box(Vector3(14, 2.5, -31), Vector3(1, 5, 38), wall_col)
-	_add_box(Vector3(-9, 2.5, -12), Vector3(10, 5, 1), wall_col)
-	_add_box(Vector3(9, 2.5, -12), Vector3(10, 5, 1), wall_col)
+	var wall_col := Color(0.7, 0.72, 0.76)
+	_add_box(Vector3(0, 2.5, -50), Vector3(28, 5, 1), wall_col, "", "metal")
+	_add_box(Vector3(-14, 2.5, -31), Vector3(1, 5, 38), wall_col, "", "metal")
+	_add_box(Vector3(14, 2.5, -31), Vector3(1, 5, 38), wall_col, "", "metal")
+	_add_box(Vector3(-9, 2.5, -12), Vector3(10, 5, 1), wall_col, "", "metal")
+	_add_box(Vector3(9, 2.5, -12), Vector3(10, 5, 1), wall_col, "", "metal")
 	var floor_body := StaticBody3D.new()
 	var fcol := CollisionShape3D.new(); var fshape := BoxShape3D.new(); fshape.size = Vector3(28, 0.2, 38); fcol.shape = fshape; fcol.position.y = -0.1
 	floor_body.add_child(fcol)
 	var fmesh := MeshInstance3D.new(); var fplane := PlaneMesh.new(); fplane.size = Vector2(28, 38); fmesh.mesh = fplane
-	var fmat := StandardMaterial3D.new(); fmat.albedo_color = Color(0.14, 0.14, 0.17); fmat.roughness = 0.6
+	var fmat := StandardMaterial3D.new(); fmat.albedo_color = Color(0.55, 0.55, 0.58); fmat.albedo_texture = _tex("concrete"); fmat.uv1_scale = Vector3(10, 14, 1); fmat.roughness = 0.55
 	fmesh.material_override = fmat
 	floor_body.add_child(fmesh)
 	floor_body.position = Vector3(0, 0.01, -31)
 	add_child(floor_body)
-	warehouse_door = _add_box(Vector3(0, 2.5, -12), Vector3(8, 5, 0.6), Color(0.3, 0.28, 0.26), "WarehouseDoor")
+	warehouse_door = _add_box(Vector3(0, 2.5, -12), Vector3(8, 5, 0.6), Color(0.55, 0.5, 0.45), "WarehouseDoor", "metal")
 	for p in [Vector3(-6, 0.5, -20), Vector3(6, 0.5, -22), Vector3(-4, 0.5, -34), Vector3(5, 0.5, -38), Vector3(0, 0.5, -44)]:
-		_add_box(p, Vector3(1.5, 1.0, 1.5), Color(0.32, 0.24, 0.14))
+		_add_box(p, Vector3(1.5, 1.0, 1.5), Color(0.8, 0.7, 0.55), "", "wood")
 	_add_lamp(Vector3(-8, 0, -20))
 	_add_lamp(Vector3(8, 0, -20))
 	_add_lamp(Vector3(0, 0, -40))
@@ -261,8 +310,19 @@ func _build_hud() -> void:
 	hud_msg.modulate = Color(1, 1, 1, 0)
 	layer.add_child(hud_msg)
 
+	var dmg_flash := ColorRect.new()
+	dmg_flash.color = Color(0.7, 0.05, 0.05, 0.0)
+	dmg_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dmg_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(dmg_flash)
+
 	player.health_changed.connect(func(hp, max_hp): hud_health.text = "الصحة: %d / %d" % [hp, max_hp])
 	player.ammo_changed.connect(func(m, r, wname): hud_ammo.text = "%s: %d / %d" % [wname, m, r])
+	player.hit_taken.connect(func(_amount):
+		dmg_flash.color.a = 0.45
+		var tw := create_tween()
+		tw.tween_property(dmg_flash, "color:a", 0.0, 0.35)
+	)
 	hud_health.text = "الصحة: 100 / 100"
 	hud_ammo.text = "مسدس: 12 / 48"
 
