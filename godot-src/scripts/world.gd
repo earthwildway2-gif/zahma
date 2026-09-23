@@ -43,29 +43,97 @@ func _build_environment() -> void:
 	var e := Environment.new()
 	e.background_mode = Environment.BG_SKY
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.05, 0.07, 0.14)
-	sky_mat.sky_horizon_color = Color(0.12, 0.11, 0.16)
+	sky_mat.sky_top_color = Color(0.04, 0.055, 0.12)
+	sky_mat.sky_horizon_color = Color(0.14, 0.12, 0.17)
 	sky_mat.ground_bottom_color = Color(0.02, 0.02, 0.03)
-	sky_mat.ground_horizon_color = Color(0.08, 0.08, 0.1)
+	sky_mat.ground_horizon_color = Color(0.1, 0.09, 0.11)
+	sky_mat.sun_angle_max = 4.0
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	e.sky = sky
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	e.ambient_light_energy = 0.9
 	e.fog_enabled = true
-	e.fog_light_color = Color(0.1, 0.12, 0.18)
-	e.fog_density = 0.014
+	e.fog_light_color = Color(0.11, 0.13, 0.2)
+	e.fog_density = 0.011
+	e.fog_aerial_perspective = 0.3
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	e.tonemap_white = 1.4
 	e.glow_enabled = true
-	e.glow_intensity = 0.7
+	e.glow_intensity = 1.1
+	e.glow_bloom = 0.15
+	e.glow_strength = 1.2
+	e.glow_hdr_threshold = 0.85
+	e.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
+	e.adjustment_enabled = true
+	e.adjustment_brightness = 1.02
+	e.adjustment_contrast = 1.12
+	e.adjustment_saturation = 1.08
 	env.environment = e
 	add_child(env)
 
 	var moon := DirectionalLight3D.new()
-	moon.rotation_degrees = Vector3(-55, -35, 0)
-	moon.light_color = Color(0.75, 0.8, 1.0)
-	moon.light_energy = 1.1
+	moon.rotation_degrees = Vector3(-52, -40, 0)
+	moon.light_color = Color(0.78, 0.83, 1.0)
+	moon.light_energy = 1.35
 	moon.shadow_enabled = true
+	moon.directional_shadow_max_distance = 90.0
+	moon.shadow_blur = 1.6
+	moon.directional_shadow_split_1 = 0.1
+	moon.directional_shadow_split_2 = 0.3
 	add_child(moon)
+
+	var rim := DirectionalLight3D.new()   # cool kicker from the opposite side for a two-tone cinematic look
+	rim.rotation_degrees = Vector3(-25, 130, 0)
+	rim.light_color = Color(0.35, 0.5, 0.95)
+	rim.light_energy = 0.35
+	add_child(rim)
+
+	get_viewport().msaa_3d = Viewport.MSAA_2X
+	get_viewport().screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+	_build_postfx()
+
+func _build_postfx() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
+uniform float time_val = 0.0;
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(41.7, 289.1))) * 43758.5453); }
+
+void fragment() {
+	vec2 uv = SCREEN_UV;
+	vec2 center = uv - 0.5;
+	float vig = 1.0 - dot(center, center) * 0.55;
+	vig = clamp(vig, 0.0, 1.0);
+
+	// subtle chromatic aberration, stronger toward the edges
+	float ca = length(center) * 0.0035;
+	vec2 dir = normalize(center + 0.0001);
+	float r = texture(screen_tex, uv - dir * ca).r;
+	float g = texture(screen_tex, uv).g;
+	float b = texture(screen_tex, uv + dir * ca).b;
+	vec3 col = vec3(r, g, b);
+
+	col *= vig;
+	col += (hash(uv * vec2(1920.0, 1080.0) + time_val) - 0.5) * 0.02;
+
+	COLOR = vec4(col, 1.0);
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	rect.material = mat
+	layer.add_child(rect)
+	var tw := create_tween().set_loops()
+	tw.tween_method(func(t): mat.set_shader_parameter("time_val", t), 0.0, 1000.0, 1000.0)
 
 var _tex_cache := {}
 func _tex(name: String) -> Texture2D:
