@@ -326,11 +326,11 @@ func _spawn_player() -> void:
 func _spawn_yard_enemies() -> void:
 	var spots := [Vector3(-6, 1, -2), Vector3(5, 1, -6), Vector3(9, 1, 4), Vector3(-8, 1, 8)]
 	var names := ["المطرب كوكو الأسمر", "الكابتن قرش الكورة", "المؤثرة ميرو ستار", "الفنان عادل التمثيل"]
-	var colors := [Color(0.55, 0.18, 0.16), Color(0.2, 0.32, 0.5), Color(0.5, 0.22, 0.45), Color(0.3, 0.45, 0.25)]
+	var outfits := ["Punk", "Adventurer", "Beach", "Casual2"]
 	for i in spots.size():
 		var en := Enemy.new()
 		en.enemy_name = names[i]
-		en.body_tint = colors[i]
+		en.outfit = outfits[i]
 		en.position = spots[i]
 		add_child(en)
 		en.died.connect(_on_yard_enemy_died)
@@ -339,11 +339,11 @@ func _spawn_yard_enemies() -> void:
 func _spawn_warehouse_enemies() -> void:
 	var spots := [Vector3(-6, 1, -20), Vector3(6, 1, -22), Vector3(-5, 1, -38), Vector3(6, 1, -40)]
 	var names := ["المذيع لطفي آخر الليل", "الدوبلير عم صبحي الخطر", "رجل الأعمال منير الذهب", "المطرب دودو ستار"]
-	var colors := [Color(0.4, 0.35, 0.15), Color(0.45, 0.2, 0.2), Color(0.25, 0.25, 0.5), Color(0.5, 0.3, 0.1)]
+	var outfits := ["Casual", "Worker", "Suit", "SpaceSuit"]
 	for i in spots.size():
 		var en := Enemy.new()
 		en.enemy_name = names[i]
-		en.body_tint = colors[i]
+		en.outfit = outfits[i]
 		en.detect_radius = 12.0
 		en.position = spots[i]
 		add_child(en)
@@ -353,7 +353,7 @@ func _spawn_warehouse_enemies() -> void:
 func _spawn_boss() -> void:
 	boss = Enemy.new()
 	boss.enemy_name = "النجم سيف الصقر"
-	boss.body_tint = Color(0.6, 0.15, 0.12)
+	boss.outfit = "King"
 	boss.max_health = 220.0
 	boss.damage = 8.0
 	boss.speed = 2.8
